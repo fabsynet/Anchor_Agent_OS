@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 1 of 7 (Foundation & Auth)
-Plan: 1 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-08 — Completed 01-01-PLAN.md (Monorepo scaffolding, Prisma schema, Supabase config)
+Last activity: 2026-02-09 — Completed 01-03-PLAN.md (NestJS backend: JWT auth, role guards, tenant Prisma, user endpoints)
 
-Progress: █░░░░░░░░░░░░░░░░░░░░ 5% (1/21 plans)
+Progress: ██░░░░░░░░░░░░░░░░░░░ 10% (2/21 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: ~25 minutes
-- Total execution time: ~0.4 hours
+- Total plans completed: 2
+- Average duration: ~20 minutes
+- Total execution time: ~0.7 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Auth | 1/5 | ~25min | ~25min |
+| 1. Foundation & Auth | 2/5 | ~40min | ~20min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~25min)
-- Trend: First plan baseline
+- Last 5 plans: 01-01 (~25min), 01-03 (~15min)
+- Trend: Improving (infrastructure plans faster after scaffold)
 
 *Updated after each plan completion*
 
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - shadcn/ui uses sonner (toast component deprecated)
 - Next.js middleware kept despite v16 deprecation warning (proxy API not stable)
 - handle_new_user trigger creates user even if invitation not found (log + continue)
+- Auth profile endpoints use raw PrismaClient (not tenant-scoped) for direct ID lookups
+- UsersService.findByTenant uses tenant-scoped client for list operations
+- @prisma/client added as direct api dependency (pnpm strict mode requires explicit deps)
 
 ### Pending Todos
 
@@ -61,9 +64,10 @@ None yet.
 
 - Next.js 16 middleware deprecation: The "proxy" convention is recommended over "middleware" in v16. Current middleware works but should be evaluated for migration in a future plan.
 - User must set up Supabase project and configure env vars before database migrations can run.
+- SUPABASE_JWT_SECRET must be configured for NestJS JWT authentication to work at runtime.
 
 ## Session Continuity
 
-Last session: 2026-02-08
-Stopped at: Completed 01-01-PLAN.md — monorepo scaffolded, Prisma schema + triggers created, Supabase clients configured
+Last session: 2026-02-09
+Stopped at: Completed 01-03-PLAN.md — NestJS backend with JWT auth, role guards, tenant-scoped Prisma, auth/users endpoints
 Resume file: None
