@@ -1,3 +1,3 @@
-// Email templates package placeholder
-// Templates will be built in Plan 05 (Invitations & Team Management)
-export {};
+export { InviteEmail } from './invite';
+export { WelcomeEmail } from './welcome';
+export { EmailLayout } from './components/layout';

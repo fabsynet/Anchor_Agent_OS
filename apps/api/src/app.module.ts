@@ -4,6 +4,8 @@ import { ClsModule } from 'nestjs-cls';
 import { PrismaModule } from './common/prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
+import { InvitationsModule } from './invitations/invitations.module.js';
+import { TenantsModule } from './tenants/tenants.module.js';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { UsersModule } from './users/users.module.js';
     PrismaModule,
     AuthModule,
     UsersModule,
+    InvitationsModule,
+    TenantsModule,
   ],
 })
 export class AppModule {}

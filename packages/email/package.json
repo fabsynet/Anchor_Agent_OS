@@ -9,8 +9,12 @@
     "dev": "echo 'email templates dev mode'",
     "lint": "echo 'no linter configured'"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@react-email/components": "^1.0.7",
+    "react": "^19.0.0"
+  },
   "devDependencies": {
+    "@types/react": "^19",
     "typescript": "^5.7.0"
   }
 }
