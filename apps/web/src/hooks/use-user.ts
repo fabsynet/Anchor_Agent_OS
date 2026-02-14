@@ -40,7 +40,7 @@ export function useUser(): UseUserReturn {
 
       if (session?.access_token) {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/auth/me`, {
+        const response = await fetch(`${apiUrl}/api/auth/me`, {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },

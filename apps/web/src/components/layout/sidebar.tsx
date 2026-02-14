@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Anchor, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NavItems } from '@/components/layout/nav-items';
 import { Button } from '@/components/ui/button';
@@ -22,15 +22,13 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Restore collapsed state from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(COLLAPSED_KEY);
-    if (stored === 'true') {
-      setCollapsed(true);
+  const [collapsed, setCollapsed] = useState(() => {
+    // Read from localStorage on initial render to avoid flash
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(COLLAPSED_KEY) === 'true';
     }
-  }, []);
+    return false;
+  });
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -66,9 +64,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         </div>
 
         {/* Collapse toggle */}
-        <div className="border-t p-3 shrink-0">
+        <div className="border-t p-2 shrink-0">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={toggleCollapsed}
             className={cn(
