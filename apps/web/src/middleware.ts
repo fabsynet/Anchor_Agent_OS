@@ -55,13 +55,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages to dashboard
-  // Exception: /verify (email verification) and /accept-invite (invitation acceptance)
-  // need the user to be authenticated AND on these pages simultaneously.
+  // Exceptions: pages that need the user authenticated AND on the page simultaneously:
+  // - /verify (email verification)
+  // - /accept-invite (invitation acceptance)
+  // - /update-password (password reset — user is authenticated via recovery code)
+  // - /auth/callback (must process auth codes regardless of session state)
   if (
     user &&
     isPublicRoute &&
     pathname !== '/verify' &&
-    !pathname.startsWith('/accept-invite')
+    pathname !== '/update-password' &&
+    !pathname.startsWith('/accept-invite') &&
+    !pathname.startsWith('/auth/callback')
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/';

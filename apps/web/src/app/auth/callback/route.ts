@@ -12,7 +12,15 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Auth callback error:", error.message);
-      return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+      // If this was a password recovery flow, redirect back to reset page with helpful message
+      if (next === "/update-password") {
+        return NextResponse.redirect(
+          `${origin}/reset-password?error=link_expired`
+        );
+      }
+      return NextResponse.redirect(
+        `${origin}/login?error=auth_callback_failed`
+      );
     }
 
     // If an explicit next param is set (e.g., /update-password), redirect there
