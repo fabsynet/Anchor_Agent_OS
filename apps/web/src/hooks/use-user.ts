@@ -39,16 +39,31 @@ export function useUser(): UseUserReturn {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.access_token) {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/api/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
+        // Extract role from JWT claims as fallback (custom_access_token_hook adds user_role)
+        try {
+          const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+          if (payload.user_role) {
+            setProfile((prev) => prev ?? { role: payload.user_role } as UserProfile);
+          }
+        } catch {
+          // JWT decode failed, continue to API call
+        }
 
-        if (response.ok) {
-          const profileData: UserProfile = await response.json();
-          setProfile(profileData);
+        // Fetch full profile from NestJS API (overrides JWT-only fallback)
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          const response = await fetch(`${apiUrl}/api/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+
+          if (response.ok) {
+            const profileData: UserProfile = await response.json();
+            setProfile(profileData);
+          }
+        } catch {
+          // API unreachable — JWT fallback already set above
         }
       }
     } catch (error) {
