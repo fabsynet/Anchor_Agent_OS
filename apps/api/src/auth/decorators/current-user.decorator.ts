@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import type { AuthenticatedUser } from '../strategies/supabase.strategy.js';
+import type { AuthenticatedUser } from '../guards/jwt-auth.guard.js';
 
 /**
  * Extracts the current authenticated user from the request.
