@@ -8,7 +8,7 @@ import {
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from './strategies/supabase.strategy.js';
+import type { AuthenticatedUser } from './guards/jwt-auth.guard.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 @Controller('auth')

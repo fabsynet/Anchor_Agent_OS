@@ -14,7 +14,7 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { TenantId } from '../auth/decorators/tenant-id.decorator.js';
-import type { AuthenticatedUser } from '../auth/strategies/supabase.strategy.js';
+import type { AuthenticatedUser } from '../auth/guards/jwt-auth.guard.js';
 import { CreateInvitationDto } from './dto/create-invitation.dto.js';
 
 @Controller('invitations')
