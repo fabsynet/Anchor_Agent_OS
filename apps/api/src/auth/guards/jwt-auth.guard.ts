@@ -57,7 +57,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    // Decode JWT payload to get custom claims (tenant_id, user_role from custom_access_token_hook)
+    // Step 1: Try JWT custom claims (from custom_access_token_hook)
     let tenantId: string | undefined;
     let userRole: string | undefined;
 
@@ -67,13 +67,32 @@ export class JwtAuthGuard implements CanActivate {
       tenantId = payload.tenant_id;
       userRole = payload.user_role;
     } catch {
-      // If decoding fails, fall back to user metadata
+      // JWT decode failed, continue to fallbacks
     }
 
-    // Fall back to user_metadata if custom claims not in JWT
+    // Step 2: Try user_metadata
     if (!tenantId) {
       tenantId = supabaseUser.user_metadata?.tenant_id;
     }
+    if (!userRole) {
+      userRole = supabaseUser.user_metadata?.user_role || supabaseUser.user_metadata?.role;
+    }
+
+    // Step 3: Query the users table as last resort (service_role bypasses RLS)
+    if (!tenantId || !userRole) {
+      const { data: dbUser } = await this.supabase
+        .from('users')
+        .select('tenant_id, role')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (dbUser) {
+        if (!tenantId) tenantId = dbUser.tenant_id;
+        if (!userRole) userRole = dbUser.role;
+      }
+    }
+
+    // Step 4: Derive role from metadata if still missing
     if (!userRole) {
       userRole = supabaseUser.user_metadata?.invitation_id ? 'agent' : 'admin';
     }
