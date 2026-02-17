@@ -7,3 +7,5 @@ export class CreateInvitationDto {
   @IsEnum(['admin', 'agent'], { message: 'Role must be admin or agent' })
   role!: 'admin' | 'agent';
 }
+
+
