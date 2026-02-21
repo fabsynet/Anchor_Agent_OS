@@ -7,6 +7,9 @@ import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { InvitationsModule } from './invitations/invitations.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
+import { ClientsModule } from './clients/clients.module.js';
+import { TimelineModule } from './timeline/timeline.module.js';
+import { PoliciesModule } from './policies/policies.module.js';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { TenantsModule } from './tenants/tenants.module.js';
     UsersModule,
     InvitationsModule,
     TenantsModule,
+    ClientsModule,
+    TimelineModule,
+    PoliciesModule,
   ],
 })
 export class AppModule {}

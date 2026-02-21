@@ -1,0 +1,279 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
+import { PrismaService } from '../common/prisma/prisma.service.js';
+import { TimelineService } from '../timeline/timeline.service.js';
+import { CreatePolicyDto } from './dto/create-policy.dto.js';
+import { UpdatePolicyDto } from './dto/update-policy.dto.js';
+
+/**
+ * Valid policy status transitions.
+ * Terminal states (expired, cancelled) have no valid transitions.
+ */
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  draft: ['active'],
+  active: ['pending_renewal', 'cancelled', 'expired'],
+  pending_renewal: ['renewed', 'expired', 'cancelled'],
+  renewed: ['active'],
+  expired: [],
+  cancelled: [],
+};
+
+@Injectable()
+export class PoliciesService {
+  private readonly logger = new Logger(PoliciesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly timelineService: TimelineService,
+  ) {}
+
+  /**
+   * Create a policy for a client.
+   * Uses $transaction to atomically create the policy, auto-convert lead, and log events.
+   */
+  async create(
+    tenantId: string,
+    clientId: string,
+    userId: string,
+    dto: CreatePolicyDto,
+  ) {
+    // Verify client exists in this tenant
+    const client = await this.prisma.tenantClient.client.findFirst({
+      where: { id: clientId },
+      include: { _count: { select: { policies: true } } },
+    });
+
+    if (!client) {
+      throw new NotFoundException(`Client ${clientId} not found`);
+    }
+
+    const policyData = {
+      tenantId,
+      clientId,
+      createdById: userId,
+      type: dto.type,
+      customType: dto.customType ?? null,
+      carrier: dto.carrier ?? null,
+      policyNumber: dto.policyNumber ?? null,
+      startDate: dto.startDate ? new Date(dto.startDate) : null,
+      endDate: dto.endDate ? new Date(dto.endDate) : null,
+      premium: dto.premium ?? null,
+      coverageAmount: dto.coverageAmount ?? null,
+      deductible: dto.deductible ?? null,
+      paymentFrequency: dto.paymentFrequency ?? null,
+      brokerCommission: dto.brokerCommission ?? null,
+      status: dto.status ?? 'draft',
+      notes: dto.notes ?? null,
+    };
+
+    // Use $transaction for atomicity: create policy + auto-convert lead + log events
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Create the policy (tx is raw, must include tenantId manually)
+      const policy = await tx.policy.create({
+        data: policyData,
+      });
+
+      // 2. Auto-convert lead to client on first policy
+      const isLead = client.status === 'lead';
+      const isFirstPolicy = (client as any)._count?.policies === 0;
+
+      if (isLead && isFirstPolicy) {
+        await tx.client.update({
+          where: { id: clientId },
+          data: { status: 'client' },
+        });
+
+        // Log status change event
+        await tx.activityEvent.create({
+          data: {
+            tenantId,
+            clientId,
+            userId,
+            type: 'client_status_changed',
+            description: 'Automatically converted from lead to client on first policy',
+            metadata: { from: 'lead', to: 'client', trigger: 'first_policy' },
+          },
+        });
+      }
+
+      // 3. Log policy created event
+      await tx.activityEvent.create({
+        data: {
+          tenantId,
+          clientId,
+          userId,
+          type: 'policy_created',
+          description: `Created ${dto.type} policy${dto.carrier ? ` with ${dto.carrier}` : ''}`,
+          metadata: {
+            policyId: policy.id,
+            type: dto.type,
+            carrier: dto.carrier ?? null,
+            status: policyData.status,
+          },
+        },
+      });
+
+      return policy;
+    });
+
+    this.logger.log(
+      `Policy created: ${result.id} (${dto.type}) for client ${clientId} by user ${userId}`,
+    );
+
+    return result;
+  }
+
+  /**
+   * List all policies for a client, ordered by createdAt descending.
+   */
+  async findAll(tenantId: string, clientId: string) {
+    return this.prisma.tenantClient.policy.findMany({
+      where: { clientId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get a single policy by ID.
+   */
+  async findOne(tenantId: string, clientId: string, id: string) {
+    const policy = await this.prisma.tenantClient.policy.findFirst({
+      where: { id, clientId },
+    });
+
+    if (!policy) {
+      throw new NotFoundException(`Policy ${id} not found`);
+    }
+
+    return policy;
+  }
+
+  /**
+   * Update a policy. Validates status transitions if status is being changed.
+   */
+  async update(
+    tenantId: string,
+    clientId: string,
+    id: string,
+    userId: string,
+    dto: UpdatePolicyDto,
+  ) {
+    const existing = await this.prisma.tenantClient.policy.findFirst({
+      where: { id, clientId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Policy ${id} not found`);
+    }
+
+    // Validate status transition if status is changing
+    if (dto.status && dto.status !== existing.status) {
+      const allowed = VALID_TRANSITIONS[existing.status] ?? [];
+      if (!allowed.includes(dto.status)) {
+        throw new BadRequestException(
+          `Invalid status transition from '${existing.status}' to '${dto.status}'. Allowed transitions: ${allowed.length > 0 ? allowed.join(', ') : 'none (terminal state)'}`,
+        );
+      }
+    }
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
+    if (dto.type !== undefined) updateData.type = dto.type;
+    if (dto.customType !== undefined) updateData.customType = dto.customType;
+    if (dto.carrier !== undefined) updateData.carrier = dto.carrier;
+    if (dto.policyNumber !== undefined)
+      updateData.policyNumber = dto.policyNumber;
+    if (dto.startDate !== undefined)
+      updateData.startDate = dto.startDate ? new Date(dto.startDate) : null;
+    if (dto.endDate !== undefined)
+      updateData.endDate = dto.endDate ? new Date(dto.endDate) : null;
+    if (dto.premium !== undefined) updateData.premium = dto.premium;
+    if (dto.coverageAmount !== undefined)
+      updateData.coverageAmount = dto.coverageAmount;
+    if (dto.deductible !== undefined) updateData.deductible = dto.deductible;
+    if (dto.paymentFrequency !== undefined)
+      updateData.paymentFrequency = dto.paymentFrequency;
+    if (dto.brokerCommission !== undefined)
+      updateData.brokerCommission = dto.brokerCommission;
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+
+    const updated = await this.prisma.tenantClient.policy.update({
+      where: { id },
+      data: updateData as any,
+    });
+
+    // Log activity events
+    if (dto.status && dto.status !== existing.status) {
+      await this.timelineService.createActivityEvent(
+        tenantId,
+        clientId,
+        userId,
+        'policy_status_changed',
+        `Policy status changed from ${existing.status} to ${dto.status}`,
+        {
+          policyId: id,
+          from: existing.status,
+          to: dto.status,
+        },
+      );
+    } else {
+      await this.timelineService.createActivityEvent(
+        tenantId,
+        clientId,
+        userId,
+        'policy_updated',
+        `Updated ${existing.type} policy`,
+        {
+          policyId: id,
+          changedFields: Object.keys(updateData),
+        },
+      );
+    }
+
+    return updated;
+  }
+
+  /**
+   * Delete a policy and log an activity event.
+   */
+  async remove(
+    tenantId: string,
+    clientId: string,
+    id: string,
+    userId: string,
+  ) {
+    const existing = await this.prisma.tenantClient.policy.findFirst({
+      where: { id, clientId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Policy ${id} not found`);
+    }
+
+    await this.prisma.tenantClient.policy.delete({
+      where: { id },
+    });
+
+    // Log deletion event
+    await this.timelineService.createActivityEvent(
+      tenantId,
+      clientId,
+      userId,
+      'policy_deleted',
+      `Deleted ${existing.type} policy${existing.carrier ? ` with ${existing.carrier}` : ''}`,
+      {
+        policyId: id,
+        type: existing.type,
+        carrier: existing.carrier,
+        status: existing.status,
+      },
+    );
+
+    return { deleted: true, id };
+  }
+}

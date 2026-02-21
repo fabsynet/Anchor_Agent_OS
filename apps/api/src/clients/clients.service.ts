@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service.js';
+import { TimelineService } from '../timeline/timeline.service.js';
 import { CreateClientDto } from './dto/create-client.dto.js';
 import { UpdateClientDto } from './dto/update-client.dto.js';
 import { SearchClientsDto } from './dto/search-clients.dto.js';
@@ -13,7 +14,10 @@ import { SearchClientsDto } from './dto/search-clients.dto.js';
 export class ClientsService {
   private readonly logger = new Logger(ClientsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly timelineService: TimelineService,
+  ) {}
 
   /**
    * Create a new client or lead.
@@ -37,6 +41,15 @@ export class ClientsService {
 
     this.logger.log(
       `Client created: ${client.id} (${dto.status}) by user ${userId}`,
+    );
+
+    // Log activity event
+    await this.timelineService.createActivityEvent(
+      tenantId,
+      client.id,
+      userId,
+      'client_created',
+      `Created ${dto.status}: ${dto.firstName} ${dto.lastName}`,
     );
 
     return client;
@@ -143,7 +156,12 @@ export class ClientsService {
   /**
    * Update a client.
    */
-  async update(tenantId: string, id: string, dto: UpdateClientDto) {
+  async update(
+    tenantId: string,
+    id: string,
+    userId: string,
+    dto: UpdateClientDto,
+  ) {
     const existing = await this.prisma.tenantClient.client.findFirst({
       where: { id },
     });
@@ -173,6 +191,16 @@ export class ClientsService {
       where: { id },
       data: updateData as any,
     });
+
+    // Log activity event with changed fields
+    await this.timelineService.createActivityEvent(
+      tenantId,
+      id,
+      userId,
+      'client_updated',
+      `Updated client: ${existing.firstName} ${existing.lastName}`,
+      { changedFields: Object.keys(updateData) },
+    );
 
     return updated;
   }
@@ -236,6 +264,16 @@ export class ClientsService {
 
     this.logger.log(
       `Client ${id} status changed from ${currentStatus} to ${newStatus} by user ${userId}`,
+    );
+
+    // Log activity event
+    await this.timelineService.createActivityEvent(
+      tenantId,
+      id,
+      userId,
+      'client_status_changed',
+      `Status changed from ${currentStatus} to ${newStatus}`,
+      { from: currentStatus, to: newStatus },
     );
 
     return updated;

@@ -69,10 +69,11 @@ export class ClientsController {
   @Patch(':id')
   async update(
     @TenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientDto,
   ) {
-    return this.clientsService.update(tenantId, id, dto);
+    return this.clientsService.update(tenantId, id, user.id, dto);
   }
 
   /**
