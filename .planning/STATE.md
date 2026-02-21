@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 2 of 7 (Client & Policy Management)
-Plan: 1 of 5 in current phase
-Status: In progress -- Plan 02-01 (Data Foundation) complete, 4 plans remaining
-Last activity: 2026-02-21 -- Completed 02-01-PLAN.md (Prisma schema, shared types, validation, dependencies)
+Plan: 2 of 5 in current phase
+Status: In progress -- Plan 02-02 (Backend API Modules) complete, 3 plans remaining
+Last activity: 2026-02-21 -- Completed 02-02-PLAN.md (ClientsModule, TimelineModule, PoliciesModule)
 
-Progress: ████░░░░░░░░░░░░░░░░░ 19% (4/21 plans complete, 2 Phase 1 plans still at checkpoint)
+Progress: ██████░░░░░░░░░░░░░░░ 24% (5/21 plans complete, 2 Phase 1 plans still at checkpoint)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -33,7 +33,11 @@ Plans 01-04 and 01-05 remain at checkpoint:human-verify. Auth rewrite was commit
 - **Delivered:** 4 new models (Client, Policy, ActivityEvent, Note), 5 enums, shared types, Zod schemas, Canadian insurance constants, @tanstack/react-table, date-fns, 6 shadcn components
 - **Summary:** .planning/phases/02-client-and-policy-management/02-01-SUMMARY.md
 
-### 02-02: Backend API Modules -- NOT STARTED
+### 02-02: Backend API Modules -- COMPLETE
+- **Commits:** fec3385 (ClientsModule), 4c7d4ea (TimelineModule + PoliciesModule + wiring)
+- **Delivered:** 13 API endpoints across 3 NestJS modules (Clients, Timeline, Policies), tenant-scoped CRUD, policy status machine, activity event logging, lead auto-convert on first policy
+- **Summary:** .planning/phases/02-client-and-policy-management/02-02-SUMMARY.md
+
 ### 02-03: Client List & Detail Pages -- NOT STARTED
 ### 02-04: Policy Management UI -- NOT STARTED
 ### 02-05: Timeline & Notes -- NOT STARTED
@@ -83,6 +87,9 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | prisma db push for migrations (Supabase) | Phase 2 | Shadow DB fails on auth.users trigger; use db push + manual migration |
 | shadcn components created manually | Phase 2 | shadcn CLI fails in pnpm workspace; radix-ui already installed |
 | updateSchema as separate z.object (not .partial()) | Phase 2 | .partial() on refined schema carries over .refine() incorrectly |
+| Use 'as any' for Prisma create/update data in tenant extension | Phase 2 | Tenant extension type signatures don't match standard Prisma input types |
+| Manual tenantId in count() and $transaction | Phase 2 | Tenant extension only overrides findMany/findFirst/create/update/delete |
+| In-memory timeline pagination | Phase 2 | Merges events+notes then paginates; acceptable for MVP scale |
 
 ### Pending Todos
 
@@ -90,7 +97,7 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 - Test /settings/team after auth rewrite (Phase 1 checkpoint)
 - Apply RLS migration via Supabase SQL Editor (may not be needed)
 - RESEND_API_KEY needed for invitation email sending (01-05)
-- Continue Phase 2: execute plans 02-02 through 02-05
+- Continue Phase 2: execute plans 02-03 through 02-05
 
 ### Blockers/Concerns
 
@@ -100,5 +107,5 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 02-01-PLAN.md (Data Foundation). All models, types, validation, and dependencies in place.
-Resume with: Execute 02-02-PLAN.md (Backend API Modules) next -- builds NestJS ClientsModule, PoliciesModule, TimelineModule on top of the models and types from 02-01.
+Stopped at: Completed 02-02-PLAN.md (Backend API Modules). 13 endpoints across ClientsModule, TimelineModule, PoliciesModule.
+Resume with: Execute 02-03-PLAN.md (Client List & Detail Pages), 02-04-PLAN.md (Policy Management UI), 02-05-PLAN.md (Timeline & Notes) -- all frontend plans consuming the API endpoints built in 02-02.
