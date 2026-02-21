@@ -20,6 +20,59 @@ enum InvitationStatus {
   expired
 }
 
+enum ClientStatus {
+  lead
+  client
+
+  @@map("client_status")
+}
+
+enum PolicyType {
+  auto
+  home
+  life
+  health
+  commercial
+  travel
+  umbrella
+  other
+
+  @@map("policy_type")
+}
+
+enum PolicyStatus {
+  draft
+  active
+  pending_renewal
+  renewed
+  expired
+  cancelled
+
+  @@map("policy_status")
+}
+
+enum PaymentFrequency {
+  monthly
+  quarterly
+  semi_annual
+  annual
+
+  @@map("payment_frequency")
+}
+
+enum ActivityEventType {
+  client_created
+  client_updated
+  client_status_changed
+  note_added
+  policy_created
+  policy_updated
+  policy_status_changed
+  policy_deleted
+
+  @@map("activity_event_type")
+}
+
 model Tenant {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -32,6 +85,11 @@ model Tenant {
 
   users       User[]
   invitations Invitation[]
+
+  clients        Client[]
+  policies       Policy[]
+  activityEvents ActivityEvent[]
+  notes          Note[]
 
   @@map("tenants")
 }
@@ -50,6 +108,11 @@ model User {
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   invitations Invitation[] @relation("invitedBy")
+
+  clientsCreated  Client[]        @relation("clientCreatedBy")
+  policiesCreated Policy[]        @relation("policyCreatedBy")
+  activityEvents  ActivityEvent[] @relation("activityEventUser")
+  notesMade       Note[]          @relation("noteUser")
 
   @@index([tenantId])
   @@map("users")
@@ -73,4 +136,100 @@ model Invitation {
   @@index([tenantId])
   @@index([email, status])
   @@map("invitations")
+}
+
+model Client {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  firstName   String       @map("first_name")
+  lastName    String       @map("last_name")
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  province    String?
+  postalCode  String?      @map("postal_code")
+  dateOfBirth DateTime?    @map("date_of_birth") @db.Date
+  status      ClientStatus @default(lead)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  createdBy      User            @relation("clientCreatedBy", fields: [createdById], references: [id])
+  policies       Policy[]
+  activityEvents ActivityEvent[]
+  notes          Note[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, lastName, firstName])
+  @@map("clients")
+}
+
+model Policy {
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  clientId         String            @map("client_id") @db.Uuid
+  type             PolicyType
+  customType       String?           @map("custom_type")
+  carrier          String?
+  policyNumber     String?           @map("policy_number")
+  startDate        DateTime?         @map("start_date") @db.Date
+  endDate          DateTime?         @map("end_date") @db.Date
+  premium          Decimal?          @db.Decimal(12, 2)
+  coverageAmount   Decimal?          @map("coverage_amount") @db.Decimal(12, 2)
+  deductible       Decimal?          @db.Decimal(12, 2)
+  paymentFrequency PaymentFrequency? @map("payment_frequency")
+  brokerCommission Decimal?          @map("broker_commission") @db.Decimal(5, 2)
+  status           PolicyStatus      @default(draft)
+  notes            String?
+  createdById      String            @map("created_by_id") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("policyCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([tenantId, status])
+  @@map("policies")
+}
+
+model ActivityEvent {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  clientId    String            @map("client_id") @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  type        ActivityEventType
+  description String
+  metadata    Json?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation("activityEventUser", fields: [userId], references: [id])
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([tenantId])
+  @@map("activity_events")
+}
+
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation("noteUser", fields: [userId], references: [id])
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([tenantId])
+  @@map("notes")
 }

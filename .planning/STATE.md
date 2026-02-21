@@ -5,69 +5,119 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** No renewal, follow-up, or compliance task silently slips through the cracks.
-**Current focus:** Phase 1 — Foundation & Auth
+**Current focus:** Phase 2 -- Client & Policy Management
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation & Auth)
-Plan: 3 of 5 in current phase
-Status: In progress
-Last activity: 2026-02-09 — Completed 01-03-PLAN.md (NestJS backend: JWT auth, role guards, tenant Prisma, user endpoints)
+Phase: 2 of 7 (Client & Policy Management)
+Plan: 4 of 5 in current phase
+Status: In progress -- Plans 02-01 through 02-04 complete, 02-05 remaining
+Last activity: 2026-02-21 -- Completed 02-03-PLAN.md (Client List & Forms)
 
-Progress: ██░░░░░░░░░░░░░░░░░░░ 10% (2/21 plans)
+Progress: ████████░░░░░░░░░░░░░ 33% (7/21 plans complete, 2 Phase 1 plans still at checkpoint)
 
-## Performance Metrics
+## Phase 1 Checkpoint State (Carried Forward)
 
-**Velocity:**
-- Total plans completed: 2
-- Average duration: ~20 minutes
-- Total execution time: ~0.7 hours
+Plans 01-04 and 01-05 remain at checkpoint:human-verify. Auth rewrite was committed 2026-02-17 but user has not yet verified. These do not block Phase 2 execution.
 
-**By Phase:**
+### 01-04: App Shell (checkpoint pending)
+- **Remaining to verify:** Theme toggle, responsive hamburger, logout, overall nav
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1. Foundation & Auth | 2/5 | ~40min | ~20min |
+### 01-05: Invitations & Team (checkpoint pending)
+- **Remaining to verify:** Team settings page loads, invite form, pending invites, revoke, invite cap, setup wizard, accept-invite page
 
-**Recent Trend:**
-- Last 5 plans: 01-01 (~25min), 01-03 (~15min)
-- Trend: Improving (infrastructure plans faster after scaffold)
+## Phase 2 Progress
 
-*Updated after each plan completion*
+### 02-01: Data Foundation -- COMPLETE
+- **Commits:** 8164de7 (Prisma schema), 6594697 (shared types + deps)
+- **Delivered:** 4 new models (Client, Policy, ActivityEvent, Note), 5 enums, shared types, Zod schemas, Canadian insurance constants, @tanstack/react-table, date-fns, 6 shadcn components
+- **Summary:** .planning/phases/02-client-and-policy-management/02-01-SUMMARY.md
+
+### 02-02: Backend API Modules -- COMPLETE
+- **Commits:** fec3385 (ClientsModule), 4c7d4ea (TimelineModule + PoliciesModule + wiring)
+- **Delivered:** 13 API endpoints across 3 NestJS modules (Clients, Timeline, Policies), tenant-scoped CRUD, policy status machine, activity event logging, lead auto-convert on first policy
+- **Summary:** .planning/phases/02-client-and-policy-management/02-02-SUMMARY.md
+
+### 02-03: Client List & Forms -- COMPLETE
+- **Commits:** fa5b357 (client list page), ba7ec0e (create/edit forms)
+- **Delivered:** /clients page with Clients/Leads tabs, search, table/card toggle, pagination; /clients/new create form; /clients/[id]/edit form with prefill; react-hook-form + zodResolver + createClientSchema
+- **Summary:** .planning/phases/02-client-and-policy-management/02-03-SUMMARY.md
+
+### 02-04: Client Profile & Timeline UI -- COMPLETE
+- **Commits:** 282ba71 (profile page + header + overview), 7293508 (timeline/notes tab + components)
+- **Delivered:** Client profile page at /clients/[id] with 4 tabs (Overview, Policies placeholder, Timeline/Notes, Documents placeholder), profile header with Convert/Delete actions, timeline compact/expanded views, note creation, 8 activity icons
+- **Summary:** .planning/phases/02-client-and-policy-management/02-04-SUMMARY.md
+
+### 02-05: Policy Management UI -- NOT STARTED
+
+## Environment Setup Required
+
+### Root `.env` (Anchor_MVP/.env)
+```
+NEXT_PUBLIC_SUPABASE_URL=<from Dashboard > Settings > API>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<from Dashboard > Settings > API>
+SUPABASE_SERVICE_ROLE_KEY=<from Dashboard > Settings > API>
+SUPABASE_JWT_SECRET=<from Dashboard > Settings > API>
+DATABASE_URL=<from Dashboard > Settings > Database > Connection string (pooling)>
+DIRECT_DATABASE_URL=<from Dashboard > Settings > Database > Connection string (direct)>
+API_PORT=3001
+FRONTEND_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+RESEND_API_KEY=<from Resend dashboard>
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+### Web `.env.local` (apps/web/.env.local)
+```
+NEXT_PUBLIC_SUPABASE_URL=<same as root>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<same as root>
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+### Database `.env` (packages/database/.env)
+```
+DATABASE_URL=<same as root -- needed for Prisma CLI>
+DIRECT_DATABASE_URL=<same as root -- needed for migrations>
+```
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- NestJS over Express (structured modules for growing codebase)
-- Supabase all-in (Auth + DB + Storage — one platform)
-- Row-level multi-tenancy with tenant_id on all tables
-- Monorepo with Turborepo (shared types between frontend/backend)
-- Canada-first, not Canada-only (provinces, CAD, but i18n-ready)
-- Phone verification deferred to v2
-- Zod v4 across monorepo (aligns @hookform/resolvers v5 with shared schemas)
-- shadcn/ui uses sonner (toast component deprecated)
-- Next.js middleware kept despite v16 deprecation warning (proxy API not stable)
-- handle_new_user trigger creates user even if invitation not found (log + continue)
-- Auth profile endpoints use raw PrismaClient (not tenant-scoped) for direct ID lookups
-- UsersService.findByTenant uses tenant-scoped client for list operations
-- @prisma/client added as direct api dependency (pnpm strict mode requires explicit deps)
+| Decision | When | Rationale |
+|----------|------|-----------|
+| Replaced passport-jwt with Supabase auth.getUser() | Phase 1 | Eliminates JWT secret mismatch issues |
+| All DB access through Prisma | Phase 1 | No more Supabase REST API for table queries |
+| Frontend uses /api/auth/me | Phase 1 | useUser hook calls backend API, not Supabase tables directly |
+| ClsModule is global | Phase 1 | No need to import in each module |
+| Auto-provision tenant+user in guard | Phase 1 | Handles case where handle_new_user trigger didn't fire |
+| Decimal fields as string in shared types | Phase 2 | Prisma serializes Decimals as strings; parseFloat only for display |
+| prisma db push for migrations (Supabase) | Phase 2 | Shadow DB fails on auth.users trigger; use db push + manual migration |
+| shadcn components created manually | Phase 2 | shadcn CLI fails in pnpm workspace; radix-ui already installed |
+| updateSchema as separate z.object (not .partial()) | Phase 2 | .partial() on refined schema carries over .refine() incorrectly |
+| Use 'as any' for Prisma create/update data in tenant extension | Phase 2 | Tenant extension type signatures don't match standard Prisma input types |
+| Manual tenantId in count() and $transaction | Phase 2 | Tenant extension only overrides findMany/findFirst/create/update/delete |
+| In-memory timeline pagination | Phase 2 | Merges events+notes then paginates; acceptable for MVP scale |
+| React.use(params) for Next.js 16 dynamic routes | Phase 2 | Next.js 16 passes params as Promise; use() unwraps in client components |
+| TimelineItem type defined locally, not in shared | Phase 2 | Merged event/note shape is specific to frontend timeline display |
+| Use z.input<typeof schema> for form types with .default() | Phase 2 | Zod v4 .default() makes input type optional but output required; zodResolver uses input type |
+| createClientSchema for both create and edit forms | Phase 2 | Edit form sends full data; avoids zodResolver type union mismatch between create/update schemas |
 
 ### Pending Todos
 
-None yet.
+- Verify DATABASE_URL is in root .env and packages/database/.env
+- Test /settings/team after auth rewrite (Phase 1 checkpoint)
+- Apply RLS migration via Supabase SQL Editor (may not be needed)
+- RESEND_API_KEY needed for invitation email sending (01-05)
+- Complete Phase 2: 02-05 (not started)
 
 ### Blockers/Concerns
 
-- Next.js 16 middleware deprecation: The "proxy" convention is recommended over "middleware" in v16. Current middleware works but should be evaluated for migration in a future plan.
-- User must set up Supabase project and configure env vars before database migrations can run.
-- SUPABASE_JWT_SECRET must be configured for NestJS JWT authentication to work at runtime.
+- handle_new_user Supabase trigger may not be set up -- guard auto-provisions as fallback
+- Phase 1 checkpoints (01-04, 01-05) still pending user verification -- does not block Phase 2
 
 ## Session Continuity
 
-Last session: 2026-02-09
-Stopped at: Execute-phase paused — 01-02 checkpoint pending (auth pages need user verification), 01-03 complete, Wave 3 not started
-Resume file: .planning/phases/01-foundation-auth/.continue-here.md
+Last session: 2026-02-21
+Stopped at: Completed 02-03-PLAN.md (Client List & Forms). 8 new frontend files.
+Resume with: Execute 02-05-PLAN.md (Policy Management UI) -- last remaining plan in Phase 2.
