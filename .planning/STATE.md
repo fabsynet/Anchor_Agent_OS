@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 2 of 7 (Client & Policy Management)
-Plan: 2 of 5 in current phase
-Status: In progress -- Plan 02-02 (Backend API Modules) complete, 3 plans remaining
-Last activity: 2026-02-21 -- Completed 02-02-PLAN.md (ClientsModule, TimelineModule, PoliciesModule)
+Plan: 4 of 5 in current phase
+Status: In progress -- Plan 02-04 (Client Profile & Timeline UI) complete, Wave 3 plans executing in parallel
+Last activity: 2026-02-21 -- Completed 02-04-PLAN.md (Client profile page, timeline/notes UI)
 
-Progress: ██████░░░░░░░░░░░░░░░ 24% (5/21 plans complete, 2 Phase 1 plans still at checkpoint)
+Progress: ███████░░░░░░░░░░░░░░ 29% (6/21 plans complete, 2 Phase 1 plans still at checkpoint)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -38,9 +38,15 @@ Plans 01-04 and 01-05 remain at checkpoint:human-verify. Auth rewrite was commit
 - **Delivered:** 13 API endpoints across 3 NestJS modules (Clients, Timeline, Policies), tenant-scoped CRUD, policy status machine, activity event logging, lead auto-convert on first policy
 - **Summary:** .planning/phases/02-client-and-policy-management/02-02-SUMMARY.md
 
-### 02-03: Client List & Detail Pages -- NOT STARTED
-### 02-04: Policy Management UI -- NOT STARTED
-### 02-05: Timeline & Notes -- NOT STARTED
+### 02-03: Client List & Forms -- IN PROGRESS (Wave 3, parallel with 02-04)
+- Running concurrently with 02-04
+
+### 02-04: Client Profile & Timeline UI -- COMPLETE
+- **Commits:** 282ba71 (profile page + header + overview), 7293508 (timeline/notes tab + components)
+- **Delivered:** Client profile page at /clients/[id] with 4 tabs (Overview, Policies placeholder, Timeline/Notes, Documents placeholder), profile header with Convert/Delete actions, timeline compact/expanded views, note creation, 8 activity icons
+- **Summary:** .planning/phases/02-client-and-policy-management/02-04-SUMMARY.md
+
+### 02-05: Policy Management UI -- NOT STARTED
 
 ## Environment Setup Required
 
@@ -90,6 +96,8 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | Use 'as any' for Prisma create/update data in tenant extension | Phase 2 | Tenant extension type signatures don't match standard Prisma input types |
 | Manual tenantId in count() and $transaction | Phase 2 | Tenant extension only overrides findMany/findFirst/create/update/delete |
 | In-memory timeline pagination | Phase 2 | Merges events+notes then paginates; acceptable for MVP scale |
+| React.use(params) for Next.js 16 dynamic routes | Phase 2 | Next.js 16 passes params as Promise; use() unwraps in client components |
+| TimelineItem type defined locally, not in shared | Phase 2 | Merged event/note shape is specific to frontend timeline display |
 
 ### Pending Todos
 
@@ -97,7 +105,7 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 - Test /settings/team after auth rewrite (Phase 1 checkpoint)
 - Apply RLS migration via Supabase SQL Editor (may not be needed)
 - RESEND_API_KEY needed for invitation email sending (01-05)
-- Continue Phase 2: execute plans 02-03 through 02-05
+- Complete Phase 2: 02-03 (in progress), 02-05 (not started)
 
 ### Blockers/Concerns
 
@@ -107,5 +115,5 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 02-02-PLAN.md (Backend API Modules). 13 endpoints across ClientsModule, TimelineModule, PoliciesModule.
-Resume with: Execute 02-03-PLAN.md (Client List & Detail Pages), 02-04-PLAN.md (Policy Management UI), 02-05-PLAN.md (Timeline & Notes) -- all frontend plans consuming the API endpoints built in 02-02.
+Stopped at: Completed 02-04-PLAN.md (Client Profile & Timeline UI). 8 new frontend files.
+Resume with: Complete 02-03 (if not finished by parallel agent), then execute 02-05-PLAN.md (Policy Management UI).
