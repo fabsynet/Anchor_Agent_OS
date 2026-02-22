@@ -14,6 +14,7 @@ import { PoliciesModule } from './policies/policies.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { RenewalsModule } from './renewals/renewals.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
     TasksModule,
     RenewalsModule,
     DashboardModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
