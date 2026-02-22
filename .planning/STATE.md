@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 3 of 7 (Tasks, Renewals & Dashboard)
-Plan: 3 of 5 in current phase
-Status: In progress -- Plans 03-01, 03-02, 03-03 complete
-Last activity: 2026-02-22 -- Completed 03-03-PLAN.md
+Plan: 4 of 5 in current phase
+Status: In progress -- Plans 03-01, 03-02, 03-03, 03-04 complete
+Last activity: 2026-02-22 -- Completed 03-04-PLAN.md
 
-Progress: ████████████░░░░░░░░░ 62% (16/26 plans complete)
+Progress: █████████████░░░░░░░░ 65% (17/26 plans complete)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -100,6 +100,9 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | Premium income uses startDate with createdAt fallback | Phase 3 | Two-query approach per period avoids raw SQL while prioritizing effective date |
 | Renewal milestones use 61-day query window | Phase 3 | Covers all three milestone intervals (60/30/7 days before renewal) |
 | @types/react added as API dev dependency | Phase 3 | Required for TSX email template compilation in NestJS |
+| closestCorners for kanban collision detection | Phase 3 | Better for column-based layouts than closestCenter |
+| _none sentinel value for Select unassignment | Phase 3 | Radix Select doesn't support empty string values |
+| Policy dropdown cascades from client selection | Phase 3 | Only fetch/show policies when client is selected |
 
 ### Pending Todos
 
@@ -107,7 +110,7 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 - Test /settings/team after auth rewrite (Phase 1 checkpoint)
 - Apply RLS migration via Supabase SQL Editor (may not be needed)
 - RESEND_API_KEY needed for email sending (invitations + daily digest)
-- Phase 3 Plans 01-03 complete -- proceed to Plan 04 (Task UI) and Plan 05 (Dashboard UI)
+- Phase 3 Plans 01-04 complete -- proceed to Plan 05 (Dashboard UI)
 
 ### Blockers/Concerns
 
@@ -117,5 +120,5 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-03-PLAN.md (Dashboard API & Email Notifications)
+Stopped at: Completed 03-04-PLAN.md (Task Management UI)
 Resume file: None
