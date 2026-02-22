@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 3 of 7 (Tasks, Renewals & Dashboard)
-Plan: 1 of 5 in current phase
-Status: In progress -- Plan 03-01 (Data Foundation) complete
-Last activity: 2026-02-22 -- Completed 03-01-PLAN.md
+Plan: 2 of 5 in current phase
+Status: In progress -- Plan 03-02 (Task CRUD & Renewals) complete
+Last activity: 2026-02-22 -- Completed 03-02-PLAN.md
 
-Progress: ██████████░░░░░░░░░░░ 50% (13/26 plans complete)
+Progress: ███████████░░░░░░░░░░ 54% (14/26 plans complete)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -93,6 +93,10 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | createClientSchema for both create and edit forms | Phase 2 | Edit form sends full data; avoids zodResolver type union mismatch between create/update schemas |
 | onDelete: Cascade on Task->Policy relation | Phase 3 | Auto-delete renewal tasks when policy is deleted (no orphans) |
 | jsx: react-jsx in API tsconfig | Phase 3 | Needed for React Email .tsx template compilation |
+| Cron services use raw this.prisma not tenantClient | Phase 3 | Cron jobs have no HTTP/CLS context; tenantClient would throw |
+| Renewal lifecycle hooks wrapped in try/catch | Phase 3 | Prevent renewal failures from breaking policy create/update |
+| GET /tasks/assignees not admin-only | Phase 3 | Any authenticated user needs assignee list for task forms |
+| Renewal tasks enforce dismissible-only rule | Phase 3 | Only status changes allowed on renewal tasks via BadRequestException |
 
 ### Pending Todos
 
@@ -100,7 +104,8 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 - Test /settings/team after auth rewrite (Phase 1 checkpoint)
 - Apply RLS migration via Supabase SQL Editor (may not be needed)
 - RESEND_API_KEY needed for invitation email sending (01-05)
-- Phase 3 Plan 01 complete -- proceed to Plan 02 (Task backend API)
+- Phase 3 Plan 02 complete -- Task CRUD and Renewal engine operational
+- Proceed to Plan 04 (Dashboard UI) and Plan 05 (Notifications)
 
 ### Blockers/Concerns
 
@@ -110,5 +115,5 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-01-PLAN.md (Data Foundation for Phase 3)
+Stopped at: Completed 03-02-PLAN.md (Task CRUD & Renewal Engine)
 Resume file: None
