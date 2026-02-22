@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ClsModule } from 'nestjs-cls';
 import { PrismaModule } from './common/prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -10,6 +11,10 @@ import { TenantsModule } from './tenants/tenants.module.js';
 import { ClientsModule } from './clients/clients.module.js';
 import { TimelineModule } from './timeline/timeline.module.js';
 import { PoliciesModule } from './policies/policies.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
+import { RenewalsModule } from './renewals/renewals.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -22,6 +27,7 @@ import { PoliciesModule } from './policies/policies.module.js';
       ],
     }),
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -30,6 +36,10 @@ import { PoliciesModule } from './policies/policies.module.js';
     ClientsModule,
     TimelineModule,
     PoliciesModule,
+    TasksModule,
+    RenewalsModule,
+    DashboardModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

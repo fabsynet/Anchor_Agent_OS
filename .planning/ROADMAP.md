@@ -7,8 +7,8 @@ Anchor's MVP delivers a complete insurance agent operating system in 7 phases, s
 ## Phases
 
 - [ ] **Phase 1: Foundation & Auth** - Monorepo setup, Supabase integration, authentication, multi-tenancy, user roles
-- [ ] **Phase 2: Client & Policy Management** - Client CRM, policy records, lead/client workflow
-- [ ] **Phase 3: Tasks, Renewals & Dashboard** - Task system, renewal automation, Today Dashboard, email notifications
+- [x] **Phase 2: Client & Policy Management** - Client CRM, policy records, lead/client workflow
+- [x] **Phase 3: Tasks, Renewals & Dashboard** - Task system, renewal automation, Today Dashboard, email notifications
 - [ ] **Phase 4: Documents & Compliance** - Document upload/linking, compliance activity log
 - [ ] **Phase 5: Expenses & Budgets** - Expense tracking, receipt uploads, budgets, alerts, financial dashboard widget
 - [ ] **Phase 6: Trust & Reputation** - Testimonials, surveys, feedback, public Agent Badge page
@@ -48,12 +48,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Schema, shared types/constants/validation, install dependencies
-- [ ] 02-02-PLAN.md -- NestJS backend modules (Clients, Timeline, Policies)
-- [ ] 02-03-PLAN.md -- Client list page (tabs, search, filters, table/card toggle, forms)
-- [ ] 02-04-PLAN.md -- Client profile page (tabbed sections, timeline/notes display)
-- [ ] 02-05-PLAN.md -- Policy frontend (forms, cards/table, auto-convert, visual verification)
-- [ ] 02-06-PLAN.md -- Standalone policies page with cross-client search
+- [x] 02-01-PLAN.md -- Schema, shared types/constants/validation, install dependencies
+- [x] 02-02-PLAN.md -- NestJS backend modules (Clients, Timeline, Policies)
+- [x] 02-03-PLAN.md -- Client list page (tabs, search, filters, table/card toggle, forms)
+- [x] 02-04-PLAN.md -- Client profile page (tabbed sections, timeline/notes display)
+- [x] 02-05-PLAN.md -- Policy frontend (forms, cards/table, auto-convert, visual verification)
+- [x] 02-06-PLAN.md -- Standalone policies page with cross-client search
 
 ### Phase 3: Tasks, Renewals & Dashboard
 **Goal**: The system actively prevents quiet failures — auto-generating renewal tasks and surfacing what needs attention daily
@@ -65,13 +65,14 @@ Plans:
   3. Today Dashboard shows upcoming renewals (30/60 days) and overdue tasks
   4. Dashboard provides quick action shortcuts to add clients, tasks, and expenses
   5. System sends renewal reminder emails and daily overdue task digests
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Task system (CRUD, client/policy linking, status, priorities)
-- [ ] 03-02: Renewal engine (auto-task generation, scheduling, cron jobs)
-- [ ] 03-03: Today Dashboard (renewals widget, overdue tasks widget, quick actions)
-- [ ] 03-04: Email notifications (renewal reminders, overdue task digest)
+- [x] 03-01-PLAN.md -- Data foundation (Prisma Task model, shared types/validation/constants, install deps)
+- [x] 03-02-PLAN.md -- Task CRUD backend + Renewal engine (tasks module, renewals module, policy lifecycle hooks)
+- [x] 03-03-PLAN.md -- Dashboard backend + Email notifications (5 dashboard endpoints, daily digest via Resend)
+- [x] 03-04-PLAN.md -- Task frontend (list/kanban page, table view, kanban board with drag-and-drop, task form)
+- [x] 03-05-PLAN.md -- Dashboard frontend (summary cards, quick actions, renewals/overdue/activity widgets, premium income)
 
 ### Phase 4: Documents & Compliance
 **Goal**: Agents can store and retrieve documents for any client or policy, with an immutable compliance trail
@@ -143,8 +144,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Auth | 0/5 | Planning complete | - |
-| 2. Client & Policy Management | 0/6 | Planning complete | - |
-| 3. Tasks, Renewals & Dashboard | 0/4 | Not started | - |
+| 2. Client & Policy Management | 6/6 | UAT passed | 2026-02-21 |
+| 3. Tasks, Renewals & Dashboard | 5/5 | Verified | 2026-02-22 |
 | 4. Documents & Compliance | 0/2 | Not started | - |
 | 5. Expenses & Budgets | 0/2 | Not started | - |
 | 6. Trust & Reputation | 0/2 | Not started | - |
