@@ -37,16 +37,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PLCY-03**: Policy status can be Active, Expired, Cancelled, or Pending
 - [ ] **PLCY-04**: A client can have multiple policies
 - [ ] **PLCY-05**: User can edit and delete policy records
-- [ ] **PLCY-06**: When a policy is created with an expiration date, renewal tasks are automatically generated at 60, 30, and 7 days before expiration
+- [x] **PLCY-06**: When a policy is created with an expiration date, renewal tasks are automatically generated at 60, 30, and 7 days before expiration
 
 ### Task Management
 
-- [ ] **TASK-01**: User can create a task with title, description, due date, and priority
-- [ ] **TASK-02**: Tasks can be linked to a specific client and/or policy
-- [ ] **TASK-03**: User can mark tasks as complete or reopen them
-- [ ] **TASK-04**: Overdue tasks are highlighted on the Today Dashboard
-- [ ] **TASK-05**: User receives email notification for tasks due today and overdue tasks
-- [ ] **TASK-06**: Auto-generated renewal tasks are distinguishable from manual tasks
+- [x] **TASK-01**: User can create a task with title, description, due date, and priority
+- [x] **TASK-02**: Tasks can be linked to a specific client and/or policy
+- [x] **TASK-03**: User can mark tasks as complete or reopen them
+- [x] **TASK-04**: Overdue tasks are highlighted on the Today Dashboard
+- [x] **TASK-05**: User receives email notification for tasks due today and overdue tasks
+- [x] **TASK-06**: Auto-generated renewal tasks are distinguishable from manual tasks
 
 ### Document Management
 
@@ -73,10 +73,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: Today Dashboard shows renewals due in the next 30 and 60 days
-- [ ] **DASH-02**: Today Dashboard shows overdue tasks with count and list
+- [x] **DASH-01**: Today Dashboard shows renewals due in the next 30 and 60 days
+- [x] **DASH-02**: Today Dashboard shows overdue tasks with count and list
 - [ ] **DASH-03**: Today Dashboard shows budget usage and expense totals for the current month
-- [ ] **DASH-04**: Today Dashboard provides quick action shortcuts (add client, add task, add expense)
+- [x] **DASH-04**: Today Dashboard provides quick action shortcuts (add client, add task, add expense)
 - [ ] **DASH-05**: Dashboard loads within 2 seconds for agencies with up to 200 clients
 
 ### Trust & Reputation
@@ -98,8 +98,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Email Notifications
 
-- [ ] **NOTF-01**: System sends renewal reminder emails at 60, 30, and 7 days before policy expiration
-- [ ] **NOTF-02**: System sends daily digest of overdue tasks (if any exist)
+- [x] **NOTF-01**: System sends renewal reminder emails at 60, 30, and 7 days before policy expiration
+- [x] **NOTF-02**: System sends daily digest of overdue tasks (if any exist)
 - [ ] **NOTF-03**: System sends budget alert email when 80% threshold is reached
 - [ ] **NOTF-04**: User invitation email includes signup link
 
@@ -187,13 +187,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLCY-03 | Phase 2 | Pending |
 | PLCY-04 | Phase 2 | Pending |
 | PLCY-05 | Phase 2 | Pending |
-| PLCY-06 | Phase 3 | Pending |
-| TASK-01 | Phase 3 | Pending |
-| TASK-02 | Phase 3 | Pending |
-| TASK-03 | Phase 3 | Pending |
-| TASK-04 | Phase 3 | Pending |
-| TASK-05 | Phase 3 | Pending |
-| TASK-06 | Phase 3 | Pending |
+| PLCY-06 | Phase 3 | Complete |
+| TASK-01 | Phase 3 | Complete |
+| TASK-02 | Phase 3 | Complete |
+| TASK-03 | Phase 3 | Complete |
+| TASK-04 | Phase 3 | Complete |
+| TASK-05 | Phase 3 | Complete |
+| TASK-06 | Phase 3 | Complete |
 | DOCS-01 | Phase 4 | Pending |
 | DOCS-02 | Phase 4 | Pending |
 | DOCS-03 | Phase 4 | Pending |
@@ -208,10 +208,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPN-04 | Phase 5 | Pending |
 | EXPN-05 | Phase 5 | Pending |
 | EXPN-06 | Phase 5 | Pending |
-| DASH-01 | Phase 3 | Pending |
-| DASH-02 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Complete |
+| DASH-02 | Phase 3 | Complete |
 | DASH-03 | Phase 5 | Pending |
-| DASH-04 | Phase 3 | Pending |
+| DASH-04 | Phase 3 | Complete |
 | DASH-05 | Phase 7 | Pending |
 | TRST-01 | Phase 6 | Pending |
 | TRST-02 | Phase 6 | Pending |
@@ -224,8 +224,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANLY-02 | Phase 7 | Pending |
 | ANLY-03 | Phase 7 | Pending |
 | ANLY-04 | Phase 7 | Pending |
-| NOTF-01 | Phase 3 | Pending |
-| NOTF-02 | Phase 3 | Pending |
+| NOTF-01 | Phase 3 | Complete |
+| NOTF-02 | Phase 3 | Complete |
 | NOTF-03 | Phase 5 | Pending |
 | NOTF-04 | Phase 1 | Pending |
 

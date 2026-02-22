@@ -8,7 +8,7 @@ Anchor's MVP delivers a complete insurance agent operating system in 7 phases, s
 
 - [ ] **Phase 1: Foundation & Auth** - Monorepo setup, Supabase integration, authentication, multi-tenancy, user roles
 - [x] **Phase 2: Client & Policy Management** - Client CRM, policy records, lead/client workflow
-- [ ] **Phase 3: Tasks, Renewals & Dashboard** - Task system, renewal automation, Today Dashboard, email notifications
+- [x] **Phase 3: Tasks, Renewals & Dashboard** - Task system, renewal automation, Today Dashboard, email notifications
 - [ ] **Phase 4: Documents & Compliance** - Document upload/linking, compliance activity log
 - [ ] **Phase 5: Expenses & Budgets** - Expense tracking, receipt uploads, budgets, alerts, financial dashboard widget
 - [ ] **Phase 6: Trust & Reputation** - Testimonials, surveys, feedback, public Agent Badge page
@@ -68,11 +68,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Data foundation (Prisma Task model, shared types/validation/constants, install deps)
-- [ ] 03-02-PLAN.md -- Task CRUD backend + Renewal engine (tasks module, renewals module, policy lifecycle hooks)
-- [ ] 03-03-PLAN.md -- Dashboard backend + Email notifications (5 dashboard endpoints, daily digest via Resend)
-- [ ] 03-04-PLAN.md -- Task frontend (list/kanban page, table view, kanban board with drag-and-drop, task form)
-- [ ] 03-05-PLAN.md -- Dashboard frontend (summary cards, quick actions, renewals/overdue/activity widgets, premium income)
+- [x] 03-01-PLAN.md -- Data foundation (Prisma Task model, shared types/validation/constants, install deps)
+- [x] 03-02-PLAN.md -- Task CRUD backend + Renewal engine (tasks module, renewals module, policy lifecycle hooks)
+- [x] 03-03-PLAN.md -- Dashboard backend + Email notifications (5 dashboard endpoints, daily digest via Resend)
+- [x] 03-04-PLAN.md -- Task frontend (list/kanban page, table view, kanban board with drag-and-drop, task form)
+- [x] 03-05-PLAN.md -- Dashboard frontend (summary cards, quick actions, renewals/overdue/activity widgets, premium income)
 
 ### Phase 4: Documents & Compliance
 **Goal**: Agents can store and retrieve documents for any client or policy, with an immutable compliance trail
@@ -145,7 +145,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Auth | 0/5 | Planning complete | - |
 | 2. Client & Policy Management | 6/6 | UAT passed | 2026-02-21 |
-| 3. Tasks, Renewals & Dashboard | 0/5 | Planning complete | - |
+| 3. Tasks, Renewals & Dashboard | 5/5 | Verified | 2026-02-22 |
 | 4. Documents & Compliance | 0/2 | Not started | - |
 | 5. Expenses & Budgets | 0/2 | Not started | - |
 | 6. Trust & Reputation | 0/2 | Not started | - |
