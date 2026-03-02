@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** No renewal, follow-up, or compliance task silently slips through the cracks.
-**Current focus:** Phase 7 -- Analytics, Import & Polish (in progress)
+**Current focus:** Phase 8 -- Scheduled Emails & Client Communications (in progress)
 
 ## Current Position
 
-Phase: 7 of 7 (Analytics, Import & Polish)
+Phase: 8 of 8 (Scheduled Emails & Client Communications)
 Plan: 5 of 5 in current phase
-Status: At checkpoint (07-05 Task 3: human-verify for Phase 7 completion)
-Last activity: 2026-02-26 -- Completed 07-05-PLAN.md Tasks 1-2 (Performance & Polish), awaiting checkpoint approval
+Status: At checkpoint (08-05 human-verify pending)
+Last activity: 2026-03-02 -- Build verification passed for 08-05, awaiting human checkpoint approval
 
-Progress: ██████████████████████████████ 100% (30/30 plans complete; 01-04, 01-05 at Phase 1 checkpoint, 07-05 at Phase 7 checkpoint)
+Progress: ████████████████████████████████ 100% (35/35 plans complete; 01-04, 01-05 at Phase 1 checkpoint, 07-05 at Phase 7 checkpoint, 08-05 at Phase 8 checkpoint)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -163,6 +163,13 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | Import dedup via normalized name+email composite key | Phase 7 | More robust than name-only or email-only matching |
 | Unrecognized import types default to other with customType | Phase 7 | Preserves original value while normalizing to valid enum |
 | Single $transaction for batch imports | Phase 7 | Atomic client+policy creation with per-row error capture |
+| EmailLog type/status as String not enum | Phase 8 | Extensible without migrations; validation at app layer |
+| sendEmail() returns result object not throws | Phase 8 | Caller-controlled error handling with { success, error? } pattern |
+| sendDigestToUser delegates to sendEmail | Phase 8 | Eliminates duplicate ZeptoMail fetch logic |
+| Birthday query uses $queryRaw with EXTRACT(MONTH/DAY) | Phase 8 | Month/day matching from date_of_birth regardless of year |
+| Renewal idempotency uses two-step check (DB + metadata) | Phase 8 | Avoids Prisma JSON path filtering; DB query then app-level policyId comparison |
+| Default TenantEmailSettings: all emails enabled | Phase 8 | Send by default when no settings record exists |
+| Per-client/per-policy try/catch in cron loops | Phase 8 | One failure doesn't stop entire batch |
 
 ## Phase 3: Tasks, Renewals & Dashboard -- COMPLETE (User tested 2026-02-22)
 
@@ -240,8 +247,29 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | No API query optimizations needed | Phase 7 | All endpoints use proper pagination, selective includes, no N+1 patterns |
 | useMemo on 3 analytics tabs only | Phase 7 | Overview/renewals/expenses already had useMemo; policies/compliance/crosssell did not |
 
+### Roadmap Evolution
+
+- Phase 8 added: Scheduled Emails & Client Communications (birthday emails, configurable renewal reminders, bulk email to all clients)
+
+## Phase 8: Scheduled Emails & Client Communications -- AT CHECKPOINT
+
+### Plans completed:
+- 08-01: Data Foundation (EmailLog + TenantEmailSettings models, shared types/constants/validation, generic sendEmail/sendBatchEmail)
+- 08-02: Birthday & Renewal Reminder Cron Jobs (birthday/renewal templates, cron at 7:00/7:30 AM, idempotent EmailLog, TenantEmailSettings toggles)
+- 08-03: Communications Module (4 endpoints: bulk email, history, settings CRUD, bulk announcement template)
+- 08-04: Communications Frontend (3 new pages: email settings toggles, email history with filters/pagination, bulk compose with admin gating)
+- 08-05: Build Verification & Human Checkpoint (build passed, awaiting user verification)
+
+| Decision | When | Rationale |
+|----------|------|-----------|
+| Bulk email creates one EmailLog per recipient | Phase 8 | Granular history tracking rather than single aggregate log |
+| Settings returns defaults when no row exists | Phase 8 | No premature row creation; all toggles default to true |
+| Empty recipients returns success with sentCount 0 | Phase 8 | Better UX than error when no clients match filter |
+| Optimistic toggle updates with revert on error | Phase 8 | Responsive settings UX for email toggle switches |
+| window.confirm for bulk email send confirmation | Phase 8 | Simple and effective confirmation for MVP |
+
 ## Session Continuity
 
-Last session: 2026-03-01
-Stopped at: 07-05-PLAN.md Task 3 checkpoint:human-verify — 6 more fixes (soft-deactivate, guard catch bug, agent names, ZeptoMail swap)
-Resume file: .planning/phases/07-analytics-import-and-polish/.continue-here.md
+Last session: 2026-03-02
+Stopped at: 08-05 checkpoint:human-verify (build passed, awaiting user approval)
+Resume file: None
