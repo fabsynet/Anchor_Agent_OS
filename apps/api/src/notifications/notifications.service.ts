@@ -39,6 +39,106 @@ export class NotificationsService {
   }
 
   /**
+   * Check if email sending is configured.
+   */
+  get isEmailConfigured(): boolean {
+    return !!this.zeptoApiKey;
+  }
+
+  /**
+   * Generic email sending method. Reusable across all email types.
+   */
+  async sendEmail(params: {
+    to: string;
+    toName?: string;
+    subject: string;
+    html: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    if (!this.zeptoApiKey) {
+      this.logger.warn('ZeptoMail not configured.');
+      return { success: false, error: 'ZeptoMail not configured' };
+    }
+    try {
+      const response = await fetch('https://api.zeptomail.com/v1.1/email', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Zoho-enczapikey ${this.zeptoApiKey}`,
+        },
+        body: JSON.stringify({
+          from: { address: this.fromAddress, name: this.fromName },
+          to: [{ email_address: { address: params.to, name: params.toName } }],
+          subject: params.subject,
+          htmlbody: params.html,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        this.logger.error(`ZeptoMail error (${response.status}): ${body}`);
+        return { success: false, error: `${response.status}: ${body}` };
+      }
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`sendEmail failed: ${error}`);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  /**
+   * Batch email sending for bulk sends (up to 500 recipients per API call).
+   */
+  async sendBatchEmail(params: {
+    recipients: Array<{ email: string; name?: string }>;
+    subject: string;
+    html: string;
+  }): Promise<{ success: boolean; sentCount: number; error?: string }> {
+    if (!this.zeptoApiKey) {
+      return { success: false, sentCount: 0, error: 'ZeptoMail not configured' };
+    }
+    const BATCH_SIZE = 500;
+    let totalSent = 0;
+    try {
+      for (let i = 0; i < params.recipients.length; i += BATCH_SIZE) {
+        const batch = params.recipients.slice(i, i + BATCH_SIZE);
+        const response = await fetch(
+          'https://api.zeptomail.com/v1.1/email/batch',
+          {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              Authorization: `Zoho-enczapikey ${this.zeptoApiKey}`,
+            },
+            body: JSON.stringify({
+              from: { address: this.fromAddress, name: this.fromName },
+              to: batch.map((r) => ({
+                email_address: { address: r.email, name: r.name },
+              })),
+              subject: params.subject,
+              htmlbody: params.html,
+            }),
+          },
+        );
+        if (!response.ok) {
+          const body = await response.text();
+          this.logger.error(`Batch email error: ${response.status}: ${body}`);
+          return {
+            success: false,
+            sentCount: totalSent,
+            error: `${response.status}: ${body}`,
+          };
+        }
+        totalSent += batch.length;
+      }
+      return { success: true, sentCount: totalSent };
+    } catch (error) {
+      this.logger.error(`sendBatchEmail failed: ${error}`);
+      return { success: false, sentCount: totalSent, error: String(error) };
+    }
+  }
+
+  /**
    * Send daily digest emails for all tenants.
    * Called by the scheduler at 8 AM.
    * CRITICAL: Uses raw this.prisma -- cron job has no HTTP context, no CLS tenant.
@@ -217,39 +317,22 @@ export class NotificationsService {
 
   /**
    * Render and send the digest email to a user via ZeptoMail.
+   * Delegates to the generic sendEmail() method.
    */
   private async sendDigestToUser(
     email: string,
     data: DigestData,
   ): Promise<void> {
-    if (!this.zeptoApiKey) {
-      this.logger.warn('ZeptoMail not configured. Cannot send email.');
-      return;
-    }
-
     try {
       const html = await render(DailyDigestEmail(data));
 
-      const response = await fetch('https://api.zeptomail.com/v1.1/email', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Zoho-enczapikey ${this.zeptoApiKey}`,
-        },
-        body: JSON.stringify({
-          from: { address: this.fromAddress, name: this.fromName },
-          to: [{ email_address: { address: email } }],
-          subject: `Anchor Daily Digest - ${data.date}`,
-          htmlbody: html,
-        }),
+      const result = await this.sendEmail({
+        to: email,
+        subject: `Anchor Daily Digest - ${data.date}`,
+        html,
       });
-
-      if (!response.ok) {
-        const body = await response.text();
-        this.logger.error(
-          `ZeptoMail error for ${email} (${response.status}): ${body}`,
-        );
+      if (!result.success) {
+        throw new Error(result.error);
       }
     } catch (error) {
       this.logger.error(`Failed to send digest email to ${email}: ${error}`);
