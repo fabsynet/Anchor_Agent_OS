@@ -157,6 +157,8 @@ model Tenant {
   budgets          Budget[]
   notifications    InAppNotification[]
   agentProfiles    AgentProfile[]
+  emailLogs        EmailLog[]
+  emailSettings    TenantEmailSettings?
 
   @@map("tenants")
 }
@@ -195,6 +197,7 @@ model User {
   budgetsCreated     Budget[]           @relation("budgetCreatedBy")
   notifications      InAppNotification[]
   agentProfile       AgentProfile?
+  emailsSent         EmailLog[]          @relation("emailSentBy")
 
   @@index([tenantId])
   @@map("users")
@@ -244,6 +247,7 @@ model Client {
   notes          Note[]
   tasks          Task[]
   documents      Document[]
+  emailLogs      EmailLog[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -528,4 +532,42 @@ model Testimonial {
   @@index([agentProfileId, isVisible, createdAt(sort: Desc)])
   @@index([agentProfileId, isFeatured])
   @@map("testimonials")
+}
+
+model EmailLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  clientId       String?  @map("client_id") @db.Uuid
+  recipientEmail String   @map("recipient_email")
+  type           String   // 'birthday_greeting' | 'renewal_reminder' | 'bulk_announcement' | 'digest'
+  subject        String
+  status         String   @default("sent") // 'queued' | 'sent' | 'failed'
+  errorMessage   String?  @map("error_message")
+  metadata       Json?
+  sentAt         DateTime @default(now()) @map("sent_at")
+  sentById       String?  @map("sent_by_id") @db.Uuid
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  sentBy User?   @relation("emailSentBy", fields: [sentById], references: [id])
+
+  @@index([tenantId, sentAt(sort: Desc)])
+  @@index([tenantId, type])
+  @@index([tenantId, clientId])
+  @@map("email_logs")
+}
+
+model TenantEmailSettings {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @unique @map("tenant_id") @db.Uuid
+  birthdayEmailsEnabled Boolean  @default(true) @map("birthday_emails_enabled")
+  renewalReminder60Days Boolean  @default(true) @map("renewal_reminder_60_days")
+  renewalReminder30Days Boolean  @default(true) @map("renewal_reminder_30_days")
+  renewalReminder7Days  Boolean  @default(true) @map("renewal_reminder_7_days")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_email_settings")
 }

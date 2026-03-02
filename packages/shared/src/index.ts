@@ -170,3 +170,33 @@ export { analyticsQuerySchema } from './validation/analytics.schema';
 export type { AnalyticsQueryInput } from './validation/analytics.schema';
 export { importRowSchema, importBatchSchema } from './validation/import.schema';
 export type { ImportRowInput, ImportBatchInput } from './validation/import.schema';
+
+// Types - Communication
+export type {
+  EmailLog,
+  EmailType,
+  EmailStatus,
+  TenantEmailSettings,
+  BulkEmailPayload,
+  EmailHistoryQuery,
+} from './types/communication';
+
+// Constants - Communication
+export {
+  EMAIL_TYPES,
+  EMAIL_STATUSES,
+  RENEWAL_REMINDER_INTERVALS,
+  RECIPIENT_FILTERS,
+} from './constants/communication';
+
+// Validation schemas - Communication
+export {
+  sendBulkEmailSchema,
+  emailSettingsSchema,
+  emailHistoryQuerySchema,
+} from './validation/communication.schema';
+export type {
+  SendBulkEmailInput,
+  EmailSettingsInput,
+  EmailHistoryQueryInput,
+} from './validation/communication.schema';
