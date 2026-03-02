@@ -10,7 +10,7 @@ import {
   FileText,
   DollarSign,
   BarChart3,
-  Mail,
+  Megaphone,
   Settings,
   type LucideIcon,
 } from 'lucide-react';
@@ -36,7 +36,7 @@ const iconMap: Record<string, LucideIcon> = {
   FileText,
   DollarSign,
   BarChart3,
-  Mail,
+  Megaphone,
   Settings,
 };
 
