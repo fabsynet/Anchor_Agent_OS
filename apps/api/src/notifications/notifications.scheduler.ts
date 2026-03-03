@@ -57,4 +57,20 @@ export class NotificationsScheduler {
       this.logger.error(`Daily digest cron failed: ${error}`);
     }
   }
+
+  /**
+   * Cross-sell campaign cron job.
+   * Runs every hour on the hour.
+   * Processes scheduled and recurring cross-sell campaigns.
+   */
+  @Cron('0 0 * * * *', { timeZone: 'America/Toronto' })
+  async handleCrossSellCampaigns(): Promise<void> {
+    this.logger.log('Cross-sell campaign cron triggered');
+    try {
+      await this.notificationsService.processCrossSellCampaigns();
+      this.logger.log('Cross-sell campaign cron completed');
+    } catch (error) {
+      this.logger.error(`Cross-sell campaign cron failed: ${error}`);
+    }
+  }
 }

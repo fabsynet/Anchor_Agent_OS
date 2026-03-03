@@ -20,6 +20,8 @@ export interface RenewalPipelineMonth {
 export interface CrossSellOpportunity {
   clientId: string;
   clientName: string;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
   activeTypes: string[];
   gaps: string[];
   fewPolicies: boolean;

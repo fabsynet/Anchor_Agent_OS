@@ -157,8 +157,10 @@ model Tenant {
   budgets          Budget[]
   notifications    InAppNotification[]
   agentProfiles    AgentProfile[]
-  emailLogs        EmailLog[]
-  emailSettings    TenantEmailSettings?
+  emailLogs           EmailLog[]
+  emailSettings       TenantEmailSettings?
+  crossSellPairings   CrossSellPairing[]
+  crossSellCampaigns  CrossSellCampaign[]
 
   @@map("tenants")
 }
@@ -198,6 +200,7 @@ model User {
   notifications      InAppNotification[]
   agentProfile       AgentProfile?
   emailsSent         EmailLog[]          @relation("emailSentBy")
+  crossSellCampaigns CrossSellCampaign[] @relation("campaignCreatedBy")
 
   @@index([tenantId])
   @@map("users")
@@ -570,4 +573,38 @@ model TenantEmailSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("tenant_email_settings")
+}
+
+model CrossSellPairing {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  types     String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("cross_sell_pairings")
+}
+
+model CrossSellCampaign {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  subject     String
+  body        String
+  scheduledAt DateTime  @map("scheduled_at")
+  recurring   Boolean   @default(false)
+  active      Boolean   @default(true)
+  lastRunAt   DateTime? @map("last_run_at")
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  createdBy User   @relation("campaignCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@map("cross_sell_campaigns")
 }

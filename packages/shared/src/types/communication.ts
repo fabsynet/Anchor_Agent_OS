@@ -1,4 +1,4 @@
-export type EmailType = 'birthday_greeting' | 'renewal_reminder' | 'bulk_announcement' | 'digest';
+export type EmailType = 'birthday_greeting' | 'renewal_reminder' | 'bulk_announcement' | 'digest' | 'cross_sell_campaign';
 export type EmailStatus = 'queued' | 'sent' | 'failed';
 
 export interface EmailLog {
@@ -40,4 +40,37 @@ export interface EmailHistoryQuery {
   limit?: number;
   type?: EmailType;
   clientId?: string;
+}
+
+export interface CrossSellPairing {
+  id: string;
+  tenantId: string;
+  name: string;
+  types: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrossSellCampaign {
+  id: string;
+  tenantId: string;
+  subject: string;
+  body: string;
+  scheduledAt: string;
+  recurring: boolean;
+  active: boolean;
+  lastRunAt: string | null;
+  createdById: string;
+  createdAt: string;
+}
+
+export interface CrossSellCampaignWithEmails extends CrossSellCampaign {
+  emailedCount: number;
+  emailedClients: Array<{
+    clientId: string;
+    clientName: string;
+    email: string;
+    sentAt: string;
+    status: string;
+  }>;
 }

@@ -179,6 +179,9 @@ export type {
   TenantEmailSettings,
   BulkEmailPayload,
   EmailHistoryQuery,
+  CrossSellPairing,
+  CrossSellCampaign,
+  CrossSellCampaignWithEmails,
 } from './types/communication';
 
 // Constants - Communication

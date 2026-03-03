@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service.js';
 import { render } from '@react-email/render';
-import { startOfDay, addDays, differenceInDays, format } from 'date-fns';
+import { startOfDay, addDays, subDays, differenceInDays, format } from 'date-fns';
 import {
   DailyDigestEmail,
   type DigestData,
@@ -11,6 +11,7 @@ import {
 } from './emails/daily-digest.js';
 import { BirthdayGreetingEmail } from './emails/birthday-greeting.js';
 import { RenewalReminderEmail } from './emails/renewal-reminder.js';
+import { CrossSellEmail } from './emails/cross-sell-email.js';
 
 @Injectable()
 export class NotificationsService {
@@ -742,6 +743,190 @@ export class NotificationsService {
       } catch (error) {
         this.logger.error(
           `Error processing renewal reminder for policy ${policy.id}: ${error}`,
+        );
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Cross-Sell Campaign Emails
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Process all due cross-sell campaigns across all tenants.
+   * Called by the scheduler hourly.
+   */
+  async processCrossSellCampaigns(): Promise<void> {
+    this.logger.log('Processing cross-sell campaigns...');
+
+    if (!this.zeptoApiKey) {
+      this.logger.warn(
+        'ZeptoMail not configured. Skipping cross-sell campaigns.',
+      );
+      return;
+    }
+
+    const now = new Date();
+
+    // Find campaigns that are due to run
+    const campaigns = await this.prisma.crossSellCampaign.findMany({
+      where: {
+        active: true,
+        OR: [
+          // First run: never run and scheduled time has passed
+          { lastRunAt: null, scheduledAt: { lte: now } },
+          // Recurring: last run was 30+ days ago
+          {
+            recurring: true,
+            lastRunAt: { lte: subDays(now, 30) },
+          },
+        ],
+      },
+      include: {
+        tenant: { select: { name: true } },
+      },
+    });
+
+    this.logger.log(`Found ${campaigns.length} cross-sell campaign(s) to process`);
+
+    for (const campaign of campaigns) {
+      try {
+        await this.sendCrossSellCampaignEmails(
+          campaign.tenantId,
+          campaign.tenant.name,
+          campaign,
+        );
+
+        // Update lastRunAt; deactivate one-time campaigns
+        await this.prisma.crossSellCampaign.update({
+          where: { id: campaign.id },
+          data: {
+            lastRunAt: now,
+            active: campaign.recurring ? true : false,
+          },
+        });
+
+        this.logger.log(
+          `Cross-sell campaign ${campaign.id} processed successfully`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to process cross-sell campaign ${campaign.id}: ${error}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Send cross-sell campaign emails for a specific campaign.
+   * Queries cross-sell opportunities, filters to clients with email, sends email, logs to EmailLog.
+   */
+  private async sendCrossSellCampaignEmails(
+    tenantId: string,
+    tenantName: string,
+    campaign: { id: string; subject: string; body: string },
+  ): Promise<void> {
+    // Load custom pairings; fall back to defaults
+    const customPairings = await this.prisma.crossSellPairing.findMany({
+      where: { tenantId },
+    });
+    const bundles =
+      customPairings.length > 0
+        ? customPairings.map((p) => ({ name: p.name, types: p.types }))
+        : [
+            { name: 'Auto + Home', types: ['auto', 'home'] },
+            { name: 'Life + Health', types: ['life', 'health'] },
+            { name: 'Home + Umbrella', types: ['home', 'umbrella'] },
+          ];
+
+    // Get clients with coverage gaps and email addresses
+    const clients = await this.prisma.client.findMany({
+      where: {
+        tenantId,
+        status: 'client',
+        email: { not: null },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        policies: {
+          where: { status: { in: ['active', 'pending_renewal'] as any } },
+          select: { type: true },
+        },
+      },
+    });
+
+    // Identify clients with gaps
+    const clientsWithGaps = clients
+      .filter((c) => c.email && c.email.trim() !== '')
+      .map((client) => {
+        const activeTypes = [...new Set(client.policies.map((p) => p.type))];
+        const gaps: string[] = [];
+
+        for (const bundle of bundles) {
+          const hasAll = bundle.types.every((t) =>
+            activeTypes.includes(t as any),
+          );
+          const hasSome = bundle.types.some((t) =>
+            activeTypes.includes(t as any),
+          );
+          if (hasSome && !hasAll) {
+            const missing = bundle.types.filter(
+              (t) => !activeTypes.includes(t as any),
+            );
+            gaps.push(...missing);
+          }
+        }
+
+        return {
+          ...client,
+          gaps: [...new Set(gaps)],
+          hasGaps: gaps.length > 0 || activeTypes.length < 2,
+        };
+      })
+      .filter((c) => c.hasGaps);
+
+    this.logger.log(
+      `Sending cross-sell campaign to ${clientsWithGaps.length} client(s) for tenant ${tenantId}`,
+    );
+
+    for (const client of clientsWithGaps) {
+      try {
+        const html = await render(
+          CrossSellEmail({
+            agencyName: tenantName,
+            clientName: client.firstName,
+            subject: campaign.subject,
+            bodyText: campaign.body,
+            missingTypes: client.gaps,
+          }),
+        );
+
+        const result = await this.sendEmail({
+          to: client.email!,
+          toName: `${client.firstName} ${client.lastName}`,
+          subject: campaign.subject,
+          html,
+        });
+
+        // Log to EmailLog
+        await this.prisma.emailLog.create({
+          data: {
+            tenantId,
+            clientId: client.id,
+            recipientEmail: client.email!,
+            type: 'cross_sell_campaign',
+            subject: campaign.subject,
+            status: result.success ? 'sent' : 'failed',
+            errorMessage: result.error || null,
+            metadata: { campaignId: campaign.id },
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to send cross-sell email to client ${client.id}: ${error}`,
         );
       }
     }
