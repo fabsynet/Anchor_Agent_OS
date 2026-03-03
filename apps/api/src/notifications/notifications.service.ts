@@ -94,6 +94,7 @@ export class NotificationsService {
     recipients: Array<{ email: string; name?: string }>;
     subject: string;
     html: string;
+    attachments?: Array<{ content: string; mime_type: string; name: string }>;
   }): Promise<{ success: boolean; sentCount: number; error?: string }> {
     if (!this.zeptoApiKey) {
       return { success: false, sentCount: 0, error: 'ZeptoMail not configured' };
@@ -119,6 +120,13 @@ export class NotificationsService {
               })),
               subject: params.subject,
               htmlbody: params.html,
+              ...(params.attachments?.length && {
+                attachment: params.attachments.map((a) => ({
+                  content: a.content,
+                  mime_type: a.mime_type,
+                  name: a.name,
+                })),
+              }),
             }),
           },
         );

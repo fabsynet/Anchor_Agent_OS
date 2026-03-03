@@ -6,9 +6,14 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage, type FileFilterCallback } from 'multer';
 import { CommunicationsService } from './communications.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -18,6 +23,18 @@ import type { AuthenticatedUser } from '../auth/guards/jwt-auth.guard.js';
 import { SendBulkEmailDto } from './dto/send-bulk-email.dto.js';
 import { EmailHistoryQueryDto } from './dto/email-history-query.dto.js';
 import { UpdateEmailSettingsDto } from './dto/update-email-settings.dto.js';
+
+const ALLOWED_ATTACHMENT_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
 
 @Controller('communications')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -72,16 +89,39 @@ export class CommunicationsController {
 
   /**
    * Send a bulk email to clients (admin only).
+   * Supports up to 3 file attachments (5MB each).
    */
   @Post('send')
+  @UseInterceptors(
+    FilesInterceptor('attachments', 3, {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (
+        _req: any,
+        file: { mimetype: string; originalname: string },
+        cb: FileFilterCallback,
+      ) => {
+        if (ALLOWED_ATTACHMENT_TYPES.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              `File type ${file.mimetype} not allowed`,
+            ) as any,
+          );
+        }
+      },
+    }),
+  )
   async sendBulkEmail(
     @TenantId() tenantId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SendBulkEmailDto,
+    @UploadedFiles() files?: Array<{ originalname: string; mimetype: string; size: number; buffer: Buffer }>,
   ) {
     if (user.role !== 'admin') {
       throw new ForbiddenException('Only admins can send bulk emails');
     }
-    return this.communicationsService.sendBulkEmail(tenantId, user.id, dto);
+    return this.communicationsService.sendBulkEmail(tenantId, user.id, dto, files);
   }
 }
