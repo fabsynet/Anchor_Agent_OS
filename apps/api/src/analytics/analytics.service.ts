@@ -10,10 +10,10 @@ import {
 } from 'date-fns';
 
 /**
- * Cross-sell bundle definitions (inlined -- API doesn't have @anchor/shared dep).
+ * Default cross-sell bundle definitions (used when no custom pairings configured).
  * Based on Canadian insurance industry standard product pairings.
  */
-const CROSS_SELL_BUNDLES = [
+const DEFAULT_CROSS_SELL_BUNDLES = [
   { name: 'Auto + Home', types: ['auto', 'home'] },
   { name: 'Life + Health', types: ['life', 'health'] },
   { name: 'Home + Umbrella', types: ['home', 'umbrella'] },
@@ -356,15 +356,26 @@ export class AnalyticsService {
 
   /**
    * Cross-sell opportunities: identify clients with coverage gaps.
-   * Uses predefined bundles to detect missing policy types.
+   * Uses custom pairings if configured, otherwise falls back to defaults.
    */
   async getCrossSellOpportunities(tenantId: string) {
+    // Load custom pairings; fall back to defaults if none exist
+    const customPairings = await this.prisma.crossSellPairing.findMany({
+      where: { tenantId },
+    });
+    const bundles =
+      customPairings.length > 0
+        ? customPairings.map((p) => ({ name: p.name, types: p.types }))
+        : DEFAULT_CROSS_SELL_BUNDLES;
+
     const clients = await this.prisma.client.findMany({
       where: { tenantId, status: 'client' },
       select: {
         id: true,
         firstName: true,
         lastName: true,
+        email: true,
+        phone: true,
         policies: {
           where: { status: { in: ['active', 'pending_renewal'] as any } },
           select: { type: true },
@@ -380,7 +391,7 @@ export class AnalyticsService {
         const gaps: string[] = [];
 
         // Check each bundle for partial coverage
-        for (const bundle of CROSS_SELL_BUNDLES) {
+        for (const bundle of bundles) {
           const hasAll = bundle.types.every((t) =>
             activeTypes.includes(t as any),
           );
@@ -402,6 +413,8 @@ export class AnalyticsService {
         return {
           clientId: client.id,
           clientName: `${client.firstName} ${client.lastName}`,
+          clientEmail: client.email ?? null,
+          clientPhone: client.phone ?? null,
           activeTypes: activeTypes as string[],
           gaps: [...new Set(gaps)],
           fewPolicies,
@@ -410,6 +423,124 @@ export class AnalyticsService {
       })
       .filter((c) => c.hasGaps)
       .map(({ hasGaps, ...rest }) => rest);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Cross-Sell Pairings CRUD
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getCrossSellPairings(tenantId: string) {
+    return this.prisma.crossSellPairing.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createCrossSellPairing(
+    tenantId: string,
+    data: { name: string; types: string[] },
+  ) {
+    const count = await this.prisma.crossSellPairing.count({
+      where: { tenantId },
+    });
+    if (count >= 10) {
+      throw new Error('Maximum of 10 cross-sell pairings per agency');
+    }
+    return this.prisma.crossSellPairing.create({
+      data: {
+        tenantId,
+        name: data.name,
+        types: data.types,
+      },
+    });
+  }
+
+  async deleteCrossSellPairing(tenantId: string, pairingId: string) {
+    return this.prisma.crossSellPairing.deleteMany({
+      where: { id: pairingId, tenantId },
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Cross-Sell Campaigns CRUD
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getCrossSellCampaigns(tenantId: string) {
+    const campaigns = await this.prisma.crossSellCampaign.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // For each campaign, count emailed clients from EmailLog
+    const result = await Promise.all(
+      campaigns.map(async (c) => {
+        const emailedCount = await this.prisma.emailLog.count({
+          where: {
+            tenantId,
+            type: 'cross_sell_campaign',
+            metadata: { path: ['campaignId'], equals: c.id },
+          },
+        });
+        return { ...c, emailedCount };
+      }),
+    );
+
+    return result;
+  }
+
+  async createCrossSellCampaign(
+    tenantId: string,
+    createdById: string,
+    data: {
+      subject: string;
+      body: string;
+      scheduledAt: string;
+      recurring: boolean;
+    },
+  ) {
+    return this.prisma.crossSellCampaign.create({
+      data: {
+        tenantId,
+        createdById,
+        subject: data.subject,
+        body: data.body,
+        scheduledAt: new Date(data.scheduledAt),
+        recurring: data.recurring,
+      },
+    });
+  }
+
+  async stopCrossSellCampaign(tenantId: string, campaignId: string) {
+    return this.prisma.crossSellCampaign.updateMany({
+      where: { id: campaignId, tenantId },
+      data: { active: false },
+    });
+  }
+
+  async getCampaignEmailedClients(tenantId: string, campaignId: string) {
+    const logs = await this.prisma.emailLog.findMany({
+      where: {
+        tenantId,
+        type: 'cross_sell_campaign',
+        metadata: { path: ['campaignId'], equals: campaignId },
+      },
+      include: {
+        client: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { sentAt: 'desc' },
+    });
+
+    return logs.map((log) => ({
+      clientId: log.clientId,
+      clientName: log.client
+        ? `${log.client.firstName} ${log.client.lastName}`
+        : log.recipientEmail,
+      email: log.recipientEmail,
+      sentAt: log.sentAt.toISOString(),
+      status: log.status,
+    }));
   }
 
   /**
