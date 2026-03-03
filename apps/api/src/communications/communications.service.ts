@@ -138,6 +138,7 @@ export class CommunicationsService {
     tenantId: string,
     userId: string,
     dto: SendBulkEmailDto,
+    files?: Array<{ originalname: string; mimetype: string; size: number; buffer: Buffer }>,
   ) {
     // Fetch tenant name
     const tenant = await this.prisma.tenant.findUnique({
@@ -189,6 +190,13 @@ export class CommunicationsService {
       }),
     );
 
+    // Convert uploaded files to base64 attachments
+    const attachments = files?.map((f) => ({
+      content: f.buffer.toString('base64'),
+      mime_type: f.mimetype,
+      name: f.originalname,
+    }));
+
     // Send via batch email
     const result = await this.notificationsService.sendBatchEmail({
       recipients: recipients.map((r) => ({
@@ -197,6 +205,7 @@ export class CommunicationsService {
       })),
       subject: dto.subject,
       html,
+      attachments,
     });
 
     // Log each recipient to EmailLog

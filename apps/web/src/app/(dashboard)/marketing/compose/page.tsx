@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, AlertTriangle, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Loader2, Mail, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { RECIPIENT_FILTERS } from "@anchor/shared";
 
@@ -35,6 +35,10 @@ interface SendResult {
   failedCount: number;
 }
 
+const MAX_ATTACHMENTS = 3;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
+
 const MARKETING_TABS = [
   { label: "Email History", href: "/marketing" },
   { label: "Compose", href: "/marketing/compose", adminOnly: true },
@@ -49,6 +53,8 @@ export default function ComposeEmailPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -56,6 +62,37 @@ export default function ComposeEmailPage() {
       router.replace("/marketing");
     }
   }, [isAdmin, isUserLoading, router]);
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    // Reset input so the same file can be re-selected after removal
+    e.target.value = "";
+
+    const remaining = MAX_ATTACHMENTS - attachments.length;
+    if (files.length > remaining) {
+      toast.error(`You can attach up to ${MAX_ATTACHMENTS} files total`);
+      return;
+    }
+
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`"${file.name}" exceeds the 5 MB limit`);
+        return;
+      }
+    }
+
+    setAttachments((prev) => [...prev, ...files]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const handleSend = async () => {
     if (!subject.trim()) {
@@ -74,11 +111,15 @@ export default function ComposeEmailPage() {
 
     setSending(true);
     try {
-      const result = await api.post<SendResult>("/api/communications/send", {
-        subject: subject.trim(),
-        body: body.trim(),
-        recipientFilter,
-      });
+      const formData = new FormData();
+      formData.append("subject", subject.trim());
+      formData.append("body", body.trim());
+      formData.append("recipientFilter", recipientFilter);
+      for (const file of attachments) {
+        formData.append("attachments", file);
+      }
+
+      const result = await api.upload<SendResult>("/api/communications/send", formData);
       toast.success(
         `Email sent to ${result.sentCount} recipient${result.sentCount !== 1 ? "s" : ""}${result.failedCount > 0 ? ` (${result.failedCount} failed)` : ""}`
       );
@@ -206,6 +247,57 @@ export default function ComposeEmailPage() {
               {body.length}/10000 characters. This message will be sent as a
               service communication from your agency.
             </p>
+          </div>
+
+          {/* Attachments */}
+          <div className="space-y-2">
+            <Label>Attachments</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ALLOWED_EXTENSIONS}
+              className="hidden"
+              onChange={handleFilesSelected}
+            />
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={attachments.length >= MAX_ATTACHMENTS}
+              >
+                <Paperclip className="size-4" />
+                Attach Files
+              </Button>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Up to {MAX_ATTACHMENTS} files, 5 MB each. PDF, images, Word, or Excel.
+              </p>
+            </div>
+            {attachments.length > 0 && (
+              <ul className="space-y-1">
+                {attachments.map((file, i) => (
+                  <li
+                    key={`${file.name}-${i}`}
+                    className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm"
+                  >
+                    <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{file.name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {formatFileSize(file.size)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(i)}
+                      className="ml-auto shrink-0 rounded p-0.5 hover:bg-muted"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Send Button */}
