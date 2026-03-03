@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowLeft, AlertTriangle, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { RECIPIENT_FILTERS } from "@anchor/shared";
 
 import { api } from "@/lib/api";
 import { useUser } from "@/hooks/use-user";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,8 +35,15 @@ interface SendResult {
   failedCount: number;
 }
 
+const MARKETING_TABS = [
+  { label: "Email History", href: "/marketing" },
+  { label: "Compose", href: "/marketing/compose", adminOnly: true },
+  { label: "Settings", href: "/marketing/settings", adminOnly: true },
+];
+
 export default function ComposeEmailPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAdmin, isLoading: isUserLoading } = useUser();
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [subject, setSubject] = useState("");
@@ -44,12 +53,11 @@ export default function ComposeEmailPage() {
   // Redirect non-admin users
   useEffect(() => {
     if (!isUserLoading && !isAdmin) {
-      router.replace("/communications");
+      router.replace("/marketing");
     }
   }, [isAdmin, isUserLoading, router]);
 
   const handleSend = async () => {
-    // Validate
     if (!subject.trim()) {
       toast.error("Subject is required");
       return;
@@ -59,7 +67,6 @@ export default function ComposeEmailPage() {
       return;
     }
 
-    // Confirm
     const confirmed = window.confirm(
       `Are you sure you want to send this email to ${getRecipientLabel(recipientFilter)}? This action cannot be undone.`
     );
@@ -75,7 +82,7 @@ export default function ComposeEmailPage() {
       toast.success(
         `Email sent to ${result.sentCount} recipient${result.sentCount !== 1 ? "s" : ""}${result.failedCount > 0 ? ` (${result.failedCount} failed)` : ""}`
       );
-      router.push("/communications");
+      router.push("/marketing");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to send email";
@@ -93,23 +100,36 @@ export default function ComposeEmailPage() {
     );
   }
 
+  const visibleTabs = MARKETING_TABS.filter(
+    (tab) => !tab.adminOnly || isAdmin
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/communications">
-            <ArrowLeft className="size-4" />
-            Back
-          </Link>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Marketing</h1>
+        <p className="text-muted-foreground">
+          Manage client communications, email history, and outreach settings.
+        </p>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Compose Email</h1>
-        <p className="text-muted-foreground">
-          Send a bulk email to your clients.
-        </p>
+      {/* Sub-navigation */}
+      <div className="flex gap-4 border-b overflow-x-auto">
+        {visibleTabs.map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={cn(
+              "pb-2 text-sm font-medium transition-colors hover:text-foreground",
+              pathname === tab.href
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
       </div>
 
       {/* Warning banner */}
@@ -117,7 +137,7 @@ export default function ComposeEmailPage() {
         <AlertTriangle className="size-5 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
         <p className="text-sm text-yellow-800 dark:text-yellow-200">
           Bulk emails are for operational announcements only (e.g., office hours
-          changes, important notices). Do not use for marketing or promotional
+          changes, important notices). Do not use for unsolicited promotional
           content.
         </p>
       </div>

@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { Loader2, Mail, Plus } from "lucide-react";
 import { toast } from "sonner";
-import type { EmailLog, EmailType } from "@anchor/shared";
+import type { EmailLog } from "@anchor/shared";
 import { EMAIL_TYPES } from "@anchor/shared";
 
 import { api } from "@/lib/api";
 import { useUser } from "@/hooks/use-user";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,20 +40,7 @@ interface PaginatedEmailResponse {
 
 const LIMIT = 20;
 
-function getStatusBadgeVariant(
-  status: string
-): "default" | "destructive" | "secondary" | "outline" {
-  switch (status) {
-    case "sent":
-      return "default";
-    case "failed":
-      return "destructive";
-    case "queued":
-      return "secondary";
-    default:
-      return "outline";
-  }
-}
+const EMAIL_TYPE_OPTIONS = EMAIL_TYPES ?? [];
 
 function getStatusBadgeClass(status: string): string {
   switch (status) {
@@ -67,7 +56,7 @@ function getStatusBadgeClass(status: string): string {
 }
 
 function getTypeLabel(type: string): string {
-  const found = EMAIL_TYPES.find((t) => t.value === type);
+  const found = EMAIL_TYPE_OPTIONS.find((t) => t.value === type);
   return found ? found.label : type;
 }
 
@@ -86,7 +75,14 @@ function getTypeBadgeClass(type: string): string {
   }
 }
 
-export default function CommunicationsPage() {
+const MARKETING_TABS = [
+  { label: "Email History", href: "/marketing" },
+  { label: "Compose", href: "/marketing/compose", adminOnly: true },
+  { label: "Settings", href: "/marketing/settings", adminOnly: true },
+];
+
+export default function MarketingPage() {
+  const pathname = usePathname();
   const { isAdmin } = useUser();
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<string>("_none");
@@ -131,24 +127,46 @@ export default function CommunicationsPage() {
   const total = response?.total ?? 0;
   const totalPages = Math.ceil(total / LIMIT) || 1;
 
+  const visibleTabs = MARKETING_TABS.filter(
+    (tab) => !tab.adminOnly || isAdmin
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Communications</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Marketing</h1>
           <p className="text-muted-foreground">
-            View sent email history and compose new messages.
+            Manage client communications, email history, and outreach settings.
           </p>
         </div>
         {isAdmin && (
           <Button asChild className="w-full sm:w-auto">
-            <Link href="/communications/compose">
+            <Link href="/marketing/compose">
               <Mail className="size-4" />
               Compose Email
             </Link>
           </Button>
         )}
+      </div>
+
+      {/* Sub-navigation */}
+      <div className="flex gap-4 border-b overflow-x-auto">
+        {visibleTabs.map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={cn(
+              "pb-2 text-sm font-medium transition-colors hover:text-foreground",
+              pathname === tab.href
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
       </div>
 
       {/* Filter bar */}
@@ -160,7 +178,7 @@ export default function CommunicationsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="_none">All Types</SelectItem>
-              {EMAIL_TYPES.map((et) => (
+              {EMAIL_TYPE_OPTIONS.map((et) => (
                 <SelectItem key={et.value} value={et.value}>
                   {et.label}
                 </SelectItem>

@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
 import { useUser } from "@/hooks/use-user";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -27,7 +29,6 @@ interface EmailSettings {
   updatedAt: string;
 }
 
-// Default settings when no record exists on backend
 const DEFAULT_SETTINGS: Omit<EmailSettings, "id" | "tenantId" | "createdAt" | "updatedAt"> = {
   birthdayEmailsEnabled: true,
   renewalReminder60Days: true,
@@ -37,17 +38,24 @@ const DEFAULT_SETTINGS: Omit<EmailSettings, "id" | "tenantId" | "createdAt" | "u
 
 type SettingsKey = keyof typeof DEFAULT_SETTINGS;
 
-export default function CommunicationsSettingsPage() {
+const MARKETING_TABS = [
+  { label: "Email History", href: "/marketing" },
+  { label: "Compose", href: "/marketing/compose", adminOnly: true },
+  { label: "Settings", href: "/marketing/settings", adminOnly: true },
+];
+
+export default function MarketingSettingsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAdmin, isLoading: isUserLoading } = useUser();
   const [settings, setSettings] = useState<EmailSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savingField, setSavingField] = useState<string | null>(null);
 
-  // Redirect non-admin users to profile settings
+  // Redirect non-admin users
   useEffect(() => {
     if (!isUserLoading && !isAdmin) {
-      router.replace("/settings/profile");
+      router.replace("/marketing");
     }
   }, [isAdmin, isUserLoading, router]);
 
@@ -55,8 +63,7 @@ export default function CommunicationsSettingsPage() {
     try {
       const data = await api.get<EmailSettings>("/api/communications/settings");
       setSettings(data);
-    } catch (err) {
-      // If 404 or no settings exist, use defaults
+    } catch {
       setSettings(null);
     } finally {
       setIsLoading(false);
@@ -75,7 +82,6 @@ export default function CommunicationsSettingsPage() {
       : DEFAULT_SETTINGS[field];
     const newValue = !currentValue;
 
-    // Optimistic update
     if (settings) {
       setSettings({ ...settings, [field]: newValue });
     }
@@ -89,7 +95,6 @@ export default function CommunicationsSettingsPage() {
       setSettings(updated);
       toast.success("Setting updated");
     } catch (err) {
-      // Revert optimistic update
       if (settings) {
         setSettings({ ...settings, [field]: currentValue });
       }
@@ -106,6 +111,10 @@ export default function CommunicationsSettingsPage() {
     return DEFAULT_SETTINGS[field];
   };
 
+  const visibleTabs = MARKETING_TABS.filter(
+    (tab) => !tab.adminOnly || isAdmin
+  );
+
   if (isUserLoading || isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -118,19 +127,34 @@ export default function CommunicationsSettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Marketing</h1>
         <p className="text-muted-foreground">
-          Manage your account, team, and public badge page.
+          Manage client communications, email history, and outreach settings.
         </p>
       </div>
 
-      {/* Settings sub-nav */}
-      <SettingsNav />
+      {/* Sub-navigation */}
+      <div className="flex gap-4 border-b overflow-x-auto">
+        {visibleTabs.map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={cn(
+              "pb-2 text-sm font-medium transition-colors hover:text-foreground",
+              pathname === tab.href
+                ? "border-b-2 border-primary text-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
 
       {/* Page Title */}
       <div>
         <h2 className="text-xl font-semibold tracking-tight">
-          Communications Settings
+          Email Settings
         </h2>
         <p className="text-sm text-muted-foreground">
           Configure automated email notifications sent to your clients.
