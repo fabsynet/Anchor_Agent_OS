@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 9 of 9 (Founder / Super-Admin Dashboard)
-Plan: 4 of 8 in current phase
+Plan: 6 of 8 in current phase
 Status: In progress
-Last activity: 2026-03-08 -- Completed 09-04-PLAN.md (Agency & User Management API)
+Last activity: 2026-03-08 -- Completed 09-06-PLAN.md (Agency Management UI)
 
-Progress: █████████████████████████████████░░░░░░░░ 91% (39/43 plans; 01-04, 01-05 at Phase 1 checkpoint, 07-05 at Phase 7 checkpoint, 08-05 at Phase 8 checkpoint)
+Progress: █████████████████████████████████░░░░░░░░ 93% (41/43 plans; 01-04, 01-05 at Phase 1 checkpoint, 07-05 at Phase 7 checkpoint, 08-05 at Phase 8 checkpoint)
 
 ## Phase 1 Checkpoint State (Carried Forward)
 
@@ -274,6 +274,9 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 ### Plans completed:
 - 09-01: Admin Foundation (SuperAdmin/AdminAuditLog models, Tenant admin fields, shared admin types/constants/validation, AuditService)
 - 09-02: Admin App Shell & Auth (Next.js 16 admin app at port 3002, dark theme, Supabase auth, sidebar layout, API client)
+- 09-03: Admin Backend API (SuperAdminGuard, AuditController, AdminModule with metrics/health endpoints)
+- 09-04: Agency & User Management API (agencies CRUD/suspend/export, users list/disable/impersonation endpoints)
+- 09-06: Agency Management UI (agency list with search/filter, detail page with tabs, suspend/limits/export dialogs)
 
 | Decision | When | Rationale |
 |----------|------|-----------|
@@ -287,9 +290,12 @@ DIRECT_DATABASE_URL=<same as root -- needed for migrations>
 | Suspension check at step 3.5 in JwtAuthGuard | Phase 9 | After tenantId resolved but before auto-provision |
 | Magic link for impersonation | Phase 9 | Supabase generateLink creates valid session without user password |
 | 876000h ban duration for user disable | Phase 9 | ~100 years effectively permanent; Supabase requires duration string |
+| Manual modal pattern for ConfirmationDialog | Phase 9 | Avoids Radix AlertDialog dep; div overlay with dark admin styling |
+| DataTable uses ColumnDef<TData, any> | Phase 9 | Avoids TypeScript variance issues with mixed column value types |
+| CSV export flattens entities into single sheet | Phase 9 | Entity-type column distinguishes users/clients/tasks/etc. |
 
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Completed 09-04-PLAN.md
+Stopped at: Completed 09-06-PLAN.md
 Resume file: None
