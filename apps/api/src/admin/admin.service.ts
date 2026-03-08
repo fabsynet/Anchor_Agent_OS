@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   subMonths,
   startOfMonth,
@@ -6,7 +7,19 @@ import {
   eachMonthOfInterval,
   format,
 } from 'date-fns';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { PrismaService } from '../common/prisma/prisma.service.js';
+import { AuditService } from './audit/audit.service.js';
+
+// Inlined from @anchor/shared (API doesn't have shared dep)
+const ADMIN_ACTIONS = {
+  SUPERADMIN_INVITE: 'superadmin.invite',
+  SUPERADMIN_REMOVE: 'superadmin.remove',
+} as const;
+
+const ADMIN_TARGET_TYPES = {
+  SUPER_ADMIN: 'super_admin',
+} as const;
 
 export interface PlatformMetrics {
   totalAgencies: number;
@@ -37,7 +50,106 @@ export interface HealthAlert {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminService.name);
+  private supabaseAdmin: SupabaseClient;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+    configService: ConfigService,
+  ) {
+    const supabaseUrl =
+      configService.get<string>('SUPABASE_URL') ??
+      configService.get<string>('NEXT_PUBLIC_SUPABASE_URL');
+    const serviceRoleKey = configService.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required',
+      );
+    }
+
+    this.supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+
+  // ── Super-Admin Management ──────────────────────────────────────────
+
+  /**
+   * Return all super-admins ordered by createdAt DESC.
+   */
+  async getSuperAdmins() {
+    return this.prisma.superAdmin.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Invite a new super-admin by email.
+   * Creates an auth user via Supabase invite and a SuperAdmin DB record.
+   */
+  async inviteSuperAdmin(
+    email: string,
+    firstName: string,
+    lastName: string,
+    invitedById: string,
+  ) {
+    // 1. Invite via Supabase Auth (service role)
+    const { data, error } =
+      await this.supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: { firstName, lastName, isSuperAdmin: true },
+      });
+
+    if (error) {
+      this.logger.error(`Failed to invite super-admin ${email}: ${error.message}`);
+      throw new Error(`Failed to invite: ${error.message}`);
+    }
+
+    // 2. Create SuperAdmin record with the auth user's ID
+    const superAdmin = await this.prisma.superAdmin.create({
+      data: {
+        id: data.user.id,
+        email,
+        firstName,
+        lastName,
+      },
+    });
+
+    // 3. Log the action
+    await this.auditService.log({
+      superAdminId: invitedById,
+      action: ADMIN_ACTIONS.SUPERADMIN_INVITE,
+      targetType: ADMIN_TARGET_TYPES.SUPER_ADMIN,
+      targetId: superAdmin.id,
+      metadata: { email, firstName, lastName },
+    });
+
+    return superAdmin;
+  }
+
+  /**
+   * Soft-delete a super-admin by setting isActive = false.
+   * Does NOT remove from auth.users.
+   */
+  async removeSuperAdmin(superAdminId: string, removedById: string) {
+    const superAdmin = await this.prisma.superAdmin.update({
+      where: { id: superAdminId },
+      data: { isActive: false },
+    });
+
+    await this.auditService.log({
+      superAdminId: removedById,
+      action: ADMIN_ACTIONS.SUPERADMIN_REMOVE,
+      targetType: ADMIN_TARGET_TYPES.SUPER_ADMIN,
+      targetId: superAdminId,
+      metadata: { email: superAdmin.email },
+    });
+
+    return superAdmin;
+  }
 
   /**
    * Cross-tenant aggregate counts for the platform.
