@@ -16,8 +16,9 @@ interface PaginationState {
   total: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface DataTableProps<TData> {
-  columns: ColumnDef<TData, unknown>[];
+  columns: ColumnDef<TData, any>[];
   data: TData[];
   pagination?: PaginationState;
   onPaginationChange?: (page: number) => void;

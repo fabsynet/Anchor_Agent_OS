@@ -63,9 +63,6 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.33
-      '@types/papaparse':
-        specifier: ^5.5.2
-        version: 5.5.2
       '@types/react':
         specifier: ^19
         version: 19.2.13
